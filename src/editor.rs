@@ -5,6 +5,8 @@ use std::{
     panic::{set_hook, take_hook},
 };
 
+mod uicomponent;
+mod messagebar;
 mod flieinfo;
 mod documentstatus;
 mod statusbar;
@@ -13,6 +15,8 @@ mod terminal;
 mod view;
 
 // use flieinfo::FileInfo;
+use self::{messagebar::MessageBar, terminal::Size};
+use uicomponent::UIComponent;
 use documentstatus::DocumentStatus;
 use statusbar::StatusBar;
 use editorcommand::EditorCommand;
@@ -22,10 +26,13 @@ use view::View;
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+#[derive(Default)]
 pub struct Editor {
     should_exit: bool,
     view: View,
     status_bar: StatusBar,
+    message_bar: MessageBar,
+    terminal_size: Size,
     title: String,
 }
 
@@ -43,24 +50,47 @@ impl Editor {
 
         let args: Vec<String> = env::args().collect();
 
-        
-        let mut editor: Editor = Self {
-            should_exit: false,
-            view: View::new(2),
-            status_bar: StatusBar::new(1),
-            title: String::new()
-        };
+        let mut editor = Self::default();
+        let size = Terminal::size().unwrap_or_default();
+
+        editor.resize(size);
+        // let mut editor: Editor = Self {
+        //     should_exit: false,
+        //     view: View::new(2),
+        //     status_bar: StatusBar::new(1),
+        //     title: String::new()
+        // };
         
         if let Some(file_name) = args.get(1) {
             editor.view.load_file(file_name);
         }
+
+        editor.message_bar.update_message("HELP: Ctrl-S = save | Ctrl-Q = quit".to_string());
 
         editor.refrest_status();
 
         Ok(editor)
     }
 
-    pub fn refrest_status(&mut self) {
+    fn resize(&mut self, size: Size) {
+        self.terminal_size = size;
+        self.view.resize(Size {
+            height: size.height.saturating_sub(2),
+            width: size.width,
+        });
+
+        self.message_bar.resize(Size {
+            height: 1,
+            width: size.width,
+        });
+
+        self.status_bar.resize(Size {
+            height: 1,
+            width: size.width,
+        });
+    }
+
+    fn refrest_status(&mut self) {
         let status: DocumentStatus = self.view.get_status();
         let title: String = format!("{} - {NAME}", status.file_name);
 
@@ -105,11 +135,10 @@ impl Editor {
             if let Ok(command) = EditorCommand::try_from(event) {
                 if matches!(command, EditorCommand::Quit) {
                     self.should_exit = true;
+                } else if let EditorCommand::Resize(size) = command {
+                    self.resize(size);
                 } else {
                     self.view.handle_command(command);
-                    if let EditorCommand::Resize(size) = command {
-                        self.status_bar.resize(size);
-                    }
                 }
             }
         }
@@ -119,9 +148,21 @@ impl Editor {
     
 
     fn refresh_screen(&mut self) {
+        if self.terminal_size.height == 0 || self.terminal_size.width == 0 {
+            return;
+        }
         let _ = Terminal::hide_caret();
-        self.view.render();
-        self.status_bar.render();
+        self.message_bar.render(self.terminal_size.height.saturating_sub(1));
+
+        if self.terminal_size.height > 1 {
+            self.status_bar.render(self.terminal_size.height.saturating_sub(2));
+        }
+
+        if self.terminal_size.height > 2 {
+            self.view.render(0);
+        }
+        // self.view.render();
+        // self.status_bar.render();
 
         let _ = Terminal::move_caret_to(self.view.caret_position());
 
