@@ -68,6 +68,7 @@ impl View {
             EditorCommand::Backspace => self.delete_char_backward(),
             EditorCommand::Delete => self.delete_char(),
             EditorCommand::Enter => self.insert_new_line(),
+            EditorCommand::Save => self.save_file(),
             EditorCommand::Quit => {},
         }
     }
@@ -272,6 +273,10 @@ impl View {
             self.buffer = buffer;
             self.needs_redraw = true;
         }
+    }
+
+    pub fn save_file(&self) {
+        let _ = self.buffer.save();
     }
 }
 
