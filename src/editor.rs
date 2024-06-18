@@ -5,18 +5,28 @@ use std::{
     panic::{set_hook, take_hook},
 };
 
+mod flieinfo;
+mod documentstatus;
+mod statusbar;
 mod editorcommand;
 mod terminal;
 mod view;
 
+// use flieinfo::FileInfo;
+use documentstatus::DocumentStatus;
+use statusbar::StatusBar;
 use editorcommand::EditorCommand;
 use terminal::Terminal;
 use view::View;
 
-#[derive(Default)]
+const NAME: &str = env!("CARGO_PKG_NAME");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 pub struct Editor {
     should_exit: bool,
     view: View,
+    status_bar: StatusBar,
+    title: String,
 }
 
 impl Editor {
@@ -29,18 +39,36 @@ impl Editor {
 
         Terminal::initialize()?;
 
-        let mut view = View::default();
+        // let mut view: View = View::new(2);
 
         let args: Vec<String> = env::args().collect();
 
+        
+        let mut editor: Editor = Self {
+            should_exit: false,
+            view: View::new(2),
+            status_bar: StatusBar::new(1),
+            title: String::new()
+        };
+        
         if let Some(file_name) = args.get(1) {
-            view.load_file(file_name);
+            editor.view.load_file(file_name);
         }
 
-        Ok(Self {
-            should_exit: false,
-            view,
-        })
+        editor.refrest_status();
+
+        Ok(editor)
+    }
+
+    pub fn refrest_status(&mut self) {
+        let status: DocumentStatus = self.view.get_status();
+        let title: String = format!("{} - {NAME}", status.file_name);
+
+        self.status_bar.update_status(status);
+
+        if title != self.title && matches!(Terminal::set_title(&title), Ok(())) {
+            self.title = title;
+        }
     }
     pub fn run(&mut self) {
         loop {
@@ -59,6 +87,9 @@ impl Editor {
                     }
                 }
             }
+
+            let status: DocumentStatus = self.view.get_status();
+            self.status_bar.update_status(status);
         }
     }
 
@@ -75,7 +106,10 @@ impl Editor {
                 if matches!(command, EditorCommand::Quit) {
                     self.should_exit = true;
                 } else {
-                    self.view.handle_command(command)
+                    self.view.handle_command(command);
+                    if let EditorCommand::Resize(size) = command {
+                        self.status_bar.resize(size);
+                    }
                 }
             }
         }
@@ -87,6 +121,7 @@ impl Editor {
     fn refresh_screen(&mut self) {
         let _ = Terminal::hide_caret();
         self.view.render();
+        self.status_bar.render();
 
         let _ = Terminal::move_caret_to(self.view.caret_position());
 

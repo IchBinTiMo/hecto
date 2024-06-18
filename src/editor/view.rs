@@ -2,9 +2,7 @@ use std::cmp::min;
 
 
 use self::line::Line;
-use super::{terminal::{Position, Size, Terminal}, editorcommand::{EditorCommand, Direction}};
-const NAME: &str = env!("CARGO_PKG_NAME");
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+use super::{terminal::{Position, Size, Terminal}, editorcommand::{EditorCommand, Direction}, DocumentStatus, NAME, VERSION};
 
 mod buffer;
 // mod location;
@@ -23,13 +21,39 @@ pub struct View {
     buffer: Buffer,
     needs_redraw: bool,
     size: Size,
+    margin_bottom: usize,
     text_location:Location,
     scroll_offset: Position,
 }
 
 impl View {
+    pub fn new(margin_bottom: usize) -> Self {
+        let terminal_size = Terminal::size().unwrap_or_default();
+
+        Self {
+            buffer: Buffer::default(),
+            needs_redraw: true,
+            size: Size {
+                width: terminal_size.width,
+                height: terminal_size.height.saturating_sub(margin_bottom),
+            },
+            margin_bottom,
+            text_location: Location::default(),
+            scroll_offset: Position::default(),
+        }
+    }
+
+    pub fn get_status(&self) -> DocumentStatus {
+        DocumentStatus {
+            total_lines: self.buffer.height(),
+            current_line_index: self.text_location.line_index,
+            file_name: format!("{}", self.buffer.file_info),
+            is_modified: self.buffer.dirty,
+        }
+    }
+
     pub fn render(&mut self) {
-        if !self.needs_redraw {
+        if !self.needs_redraw || self.size.height == 0 {
             return;
         }
 
@@ -63,7 +87,7 @@ impl View {
     pub fn handle_command(&mut self, command: EditorCommand) {
         match command {
             EditorCommand::Resize(size) => self.resize(size),
-            EditorCommand::Move(direction) => self.move_text_location(&direction),
+            EditorCommand::Move(direction) => self.move_text_location(direction),
             EditorCommand::Insert(character) => self.insert_char(character),
             EditorCommand::Backspace => self.delete_char_backward(),
             EditorCommand::Delete => self.delete_char(),
@@ -73,15 +97,18 @@ impl View {
         }
     }
 
-    fn resize(&mut self, size: Size) {
-        self.size = size;
+    fn resize(&mut self, to: Size) {
+        self.size = Size {
+            width: to.width,
+            height: to.height.saturating_sub(self.margin_bottom),
+        };
         self.scroll_text_location_into_view();
         self.needs_redraw = true;
     }
 
     fn delete_char_backward(&mut self) {
         if self.text_location.line_index != 0 || self.text_location.grapheme_index != 0 {
-            self.move_text_location(&Direction::Left);
+            self.move_text_location(Direction::Left);
             self.delete_char();
         }
     }
@@ -101,7 +128,7 @@ impl View {
         let grapheme_delta = new_len.saturating_sub(old_len);
 
         if grapheme_delta > 0 {
-            self.move_text_location(&Direction::Right);
+            self.move_text_location(Direction::Right);
         }
 
         self.needs_redraw = true;
@@ -109,12 +136,12 @@ impl View {
 
     fn insert_new_line(&mut self) {
         self.buffer.insert_new_line(self.text_location);
-        self.move_text_location(&Direction::Right);
+        self.move_text_location(Direction::Right);
         self.needs_redraw = true;
     }
 
     #[allow(clippy::arithmetic_side_effects)]
-    fn move_text_location(&mut self, direction: &Direction) {
+    fn move_text_location(&mut self, direction: Direction) {
         let Size { height, .. } = self.size;
 
         match direction {
@@ -139,22 +166,26 @@ impl View {
 
     fn build_welcome_message(width: usize) -> String {
         if width == 0 {
-            return " ".to_string();
+            return String::new();
         }
 
         let welcome_message: String = format!("{NAME} - version {VERSION}");
         let len: usize = welcome_message.len();
 
-        if width <= len {
+        let remaining_width: usize = width.saturating_sub(1);
+
+        if remaining_width <= len {
             return "~".to_string();
         }
 
-        #[allow(clippy::integer_division)]
-        let padding = (width.saturating_sub(len).saturating_sub(1)) / 2;
+        format!("{:<1}{:^remaining_width$}", "~", welcome_message)
 
-        let mut full_message: String = format!("~{}{}", " ".repeat(padding), welcome_message);
-        full_message.truncate(width);
-        full_message
+        // #[allow(clippy::integer_division)]
+        // let padding = (width.saturating_sub(len).saturating_sub(1)) / 2;
+
+        // let mut full_message: String = format!("~{}{}", " ".repeat(padding), welcome_message);
+        // full_message.truncate(width);
+        // full_message
     }
 
     fn scroll_vertically(&mut self, to: usize) {
@@ -275,19 +306,19 @@ impl View {
         }
     }
 
-    pub fn save_file(&self) {
+    pub fn save_file(&mut self) {
         let _ = self.buffer.save();
     }
 }
 
-impl Default for View {
-    fn default() -> Self {
-        Self {
-            buffer: Buffer::default(),
-            needs_redraw: true,
-            size: Terminal::size().unwrap_or_default(),
-            text_location: Location::default(),
-            scroll_offset: Position::default(),
-        }
-    }
-}
+// impl Default for View {
+//     fn default() -> Self {
+//         Self {
+//             buffer: Buffer::default(),
+//             needs_redraw: true,
+//             size: Terminal::size().unwrap_or_default(),
+//             text_location: Location::default(),
+//             scroll_offset: Position::default(),
+//         }
+//     }
+// }

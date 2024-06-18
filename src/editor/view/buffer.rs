@@ -1,6 +1,8 @@
 use std::fs::{read_to_string, File};
 use std::io::{Error, Write};
 
+use crate::editor::flieinfo::FileInfo;
+
 use super::line::Line;
 use super::Location;
 
@@ -8,7 +10,8 @@ use super::Location;
 #[derive(Default)]
 pub struct Buffer {
     pub lines: Vec<Line>,
-    file_name: Option<String>,
+    pub file_info: FileInfo,
+    pub dirty: bool, // to indicate whether the buffer is modified or not, default is false, set to true when buffer is modified
 }
 
 impl Buffer {
@@ -20,16 +23,18 @@ impl Buffer {
             lines.push(Line::from(value));
         }
 
-        Ok(Self { lines , file_name: Some(file_name.to_string()) })
+        Ok(Self { lines, file_info: FileInfo::from(file_name), dirty: false })
     }
 
-    pub fn save(&self) -> Result<(), Error> {
-        if let Some(file_name) = &self.file_name {
-            let mut file = File::create(file_name)?;
+    pub fn save(&mut self) -> Result<(), Error> {
+        if let Some(path) = &self.file_info.path {
+            let mut file = File::create(path)?;
 
             for line in &self.lines {
                 writeln!(file, "{line}")?;
             }
+
+            self.dirty = false;
         }
 
         Ok(())
@@ -50,8 +55,10 @@ impl Buffer {
 
         if at.line_index == self.height() {
             self.lines.push(Line::from(&character.to_string()));
+            self.dirty = false;
         } else if let Some(line) = self.lines.get_mut(at.line_index) {
             line.insert_char(character, at.grapheme_index);
+            self.dirty = false;
         }
     }
 
@@ -63,9 +70,11 @@ impl Buffer {
 
                 #[allow(clippy::integer_arithmetic)]
                 self.lines[at.line_index].append(&next_line);
+                self.dirty = false;
             } else if at.grapheme_index < line.grapheme_count() {
                 #[allow(clippy::integer_arithmetic)]
                 self.lines[at.line_index].delete_char(at.grapheme_index);
+                self.dirty = false;
             }
         }
     }
@@ -76,9 +85,11 @@ impl Buffer {
             // which means we are at the last line,
             // insert a new empty line
             self.lines.push(Line::default());
+            self.dirty = false;
         } else if let Some(line) = self.lines.get_mut(at.line_index) {
             let new = line.split(at.grapheme_index);
             self.lines.insert(at.line_index.saturating_add(1), new);
+            self.dirty = false;
 
         }
     }
