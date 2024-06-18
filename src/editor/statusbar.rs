@@ -41,8 +41,8 @@ impl StatusBar {
 
         self.position_y = position_y;
         self.is_visible = is_visible;
+        self.needs_redraw = true;
         // self.position_y = size.height.saturating_sub(self.margin_bottom).saturating_sub(1);
-        // self.needs_redraw = true;
     }
 
     pub fn update_status(&mut self, new_status: DocumentStatus) {
