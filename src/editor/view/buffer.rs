@@ -11,8 +11,8 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn load_file(path: &str) -> Result<Self, Error> {
-        let contents = read_to_string(path)?;
+    pub fn load_file(file_name: &str) -> Result<Self, Error> {
+        let contents = read_to_string(file_name)?;
         let mut lines = Vec::new();
 
         for value in contents.lines() {

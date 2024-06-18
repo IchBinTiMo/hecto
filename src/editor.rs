@@ -33,8 +33,8 @@ impl Editor {
 
         let args: Vec<String> = env::args().collect();
 
-        if let Some(path) = args.get(1) {
-            view.load_file(path);
+        if let Some(file_name) = args.get(1) {
+            view.load_file(file_name);
         }
 
         Ok(Self {

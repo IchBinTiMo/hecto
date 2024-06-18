@@ -267,8 +267,8 @@ impl View {
         self.text_location.line_index = min(self.text_location.line_index, self.buffer.height());
     }
 
-    pub fn load_file(&mut self, path: &str) {
-        if let Ok(buffer) = Buffer::load_file(path) {
+    pub fn load_file(&mut self, file_name: &str) {
+        if let Ok(buffer) = Buffer::load_file(file_name) {
             self.buffer = buffer;
             self.needs_redraw = true;
         }
