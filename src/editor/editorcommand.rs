@@ -19,6 +19,7 @@ pub enum EditorCommand {
     Insert(char),
     Backspace,
     Delete,
+    Enter,
     Quit,
 }
 
@@ -44,6 +45,8 @@ impl TryFrom<Event> for EditorCommand {
                 (KeyCode::End, _) => Ok(Self::Move(Direction::End)),
                 (KeyCode::Backspace, _) => Ok(Self::Backspace),
                 (KeyCode::Delete, _) => Ok(Self::Delete),
+                (KeyCode::Enter, _) => Ok(Self::Enter),
+                (KeyCode::Tab, _) => Ok(Self::Insert('\t')),
                 _ => Err(format!("Unsupported event: {:?}", event)),
             },
             Event::Resize(width_16, height_16) => Ok(Self::Resize(Size { width: width_16 as usize, height: height_16 as usize })),
