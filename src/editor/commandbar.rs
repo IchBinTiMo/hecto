@@ -1,6 +1,5 @@
+use super::{command::Edit, Line, Size, Terminal, UIComponent};
 use std::{cmp::min, io::Error};
-
-use super::{command::Edit, Line, Size, UIComponent, Terminal};
 
 #[derive(Default)]
 pub struct CommandBar {
@@ -14,7 +13,7 @@ impl CommandBar {
     pub fn handle_edit_command(&mut self, command: Edit) {
         match command {
             Edit::Insert(character) => self.value.append_char(character),
-            Edit::Delete | Edit::InsertNewline => {},
+            Edit::Delete | Edit::InsertNewline => {}
             Edit::DeleteBackward => self.value.delete_last(),
         }
 
@@ -22,7 +21,10 @@ impl CommandBar {
     }
 
     pub fn caret_position_col(&self) -> usize {
-        let max_width = self.prompt.len().saturating_add(self.value.grapheme_count());
+        let max_width = self
+            .prompt
+            .len()
+            .saturating_add(self.value.grapheme_count());
 
         min(max_width, self.size.width)
     }
@@ -56,7 +58,11 @@ impl UIComponent for CommandBar {
 
         let value_start = value_end.saturating_sub(area_for_value);
 
-        let message = format!("{}{}", self.prompt, self.value.get_visible_graphemes(value_start..value_end));
+        let message = format!(
+            "{}{}",
+            self.prompt,
+            self.value.get_visible_graphemes(value_start..value_end)
+        );
 
         let to_print = if message.len() <= self.size.width {
             message
@@ -65,6 +71,5 @@ impl UIComponent for CommandBar {
         };
 
         Terminal::print_row(origin, &to_print)
-
     }
 }

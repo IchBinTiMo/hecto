@@ -1,15 +1,10 @@
+use super::{Size, Terminal, UIComponent};
 use std::io::Error;
-
-use super::{
-    Terminal,
-    UIComponent,
-    Size
-};
 
 #[derive(Default)]
 pub struct MessageBar {
     current_message: String,
-    needs_redraw: bool
+    needs_redraw: bool,
 }
 
 impl MessageBar {

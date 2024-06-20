@@ -1,8 +1,6 @@
 use std::{fmt, ops::Range};
-
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-// use unicode_width::UnicodeWidthStr;
 
 #[derive(Copy, Clone)]
 enum GraphemeWidth {
@@ -184,13 +182,19 @@ impl Line {
         }
 
         let remainder = self.fragments.split_off(at);
-        Self { fragments: remainder }
+        Self {
+            fragments: remainder,
+        }
     }
 }
 
 impl fmt::Display for Line {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let result: String = self.fragments.iter().map(|fragment| fragment.grapheme.clone()).collect();
+        let result: String = self
+            .fragments
+            .iter()
+            .map(|fragment| fragment.grapheme.clone())
+            .collect();
 
         write!(f, "{}", result)
     }

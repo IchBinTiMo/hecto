@@ -1,6 +1,5 @@
-use std::io::Error;
-
 use super::Size;
+use std::io::Error;
 
 pub trait UIComponent {
     // marks the component as needing to be redrawn
@@ -29,11 +28,10 @@ pub trait UIComponent {
                     {
                         panic!("Could not render component: {err:?}");
                     }
-                },
+                }
             }
         }
     }
 
     fn draw(&mut self, origin_row: usize) -> Result<(), Error>;
-
 }

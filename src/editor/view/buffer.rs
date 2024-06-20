@@ -1,13 +1,8 @@
-use std::fs::{read_to_string, File};
-use std::io::{Error, Write};
-
-// use crate::editor::flieinfo::FileInfo;
-
-// use super::line::Line;
-use super::FileInfo;
-use super::Line;
-use super::Location;
-
+use super::{FileInfo, Line, Location};
+use std::{
+    fs::{read_to_string, File},
+    io::{Error, Write},
+};
 
 #[derive(Default)]
 pub struct Buffer {
@@ -25,7 +20,11 @@ impl Buffer {
             lines.push(Line::from(value));
         }
 
-        Ok(Self { lines, file_info: FileInfo::from(file_name), dirty: false })
+        Ok(Self {
+            lines,
+            file_info: FileInfo::from(file_name),
+            dirty: false,
+        })
     }
 
     fn save_to_file(&self, file_info: &FileInfo) -> Result<(), Error> {
@@ -53,21 +52,6 @@ impl Buffer {
         self.dirty = false;
         Ok(())
     }
-
-    // pub fn save(&mut self) -> Result<(), Error> {
-    //     if let Some(path) = &self.file_info.path {
-    //         let mut file = File::create(path)?;
-
-    //         for line in &self.lines {
-    //             writeln!(file, "{line}")?;
-    //         }
-
-    //         self.dirty = false;
-    //     }
-
-    //     Ok(())
-    // }
-
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
@@ -96,7 +80,9 @@ impl Buffer {
 
     pub fn delete_char(&mut self, at: Location) {
         if let Some(line) = self.lines.get(at.line_index) {
-            if at.grapheme_index >= line.grapheme_count() && self.height() > at.line_index.saturating_add(1) {
+            if at.grapheme_index >= line.grapheme_count()
+                && self.height() > at.line_index.saturating_add(1)
+            {
                 // to check if we are at the end of the line
                 let next_line = self.lines.remove(at.line_index.saturating_add(1));
 
@@ -122,7 +108,6 @@ impl Buffer {
             let new = line.split(at.grapheme_index);
             self.lines.insert(at.line_index.saturating_add(1), new);
             self.dirty = false;
-
         }
     }
 }

@@ -1,33 +1,15 @@
-use crossterm::cursor::{Hide, MoveTo, Show};
-use crossterm::style::{Attribute, Print};
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, size, Clear, ClearType, DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen, SetTitle
-};
-use crossterm::{queue, Command};
-use std::io::{stdout, Error, Write};
-
 use super::{Position, Size};
-
-// #[derive(Clone, Copy, Default)]
-// pub struct Size {
-//     pub height: usize,
-//     pub width: usize,
-// }
-
-// #[derive(Clone, Copy, Default)]
-// pub struct Position {
-//     pub col: usize,
-//     pub row: usize,
-// }
-
-// impl Position {
-//     pub const fn saturating_sub(self, other: Self) -> Self {
-//         Self {
-//             row: self.row.saturating_sub(other.row),
-//             col: self.col.saturating_sub(other.col),
-//         }
-//     }
-// }
+use std::io::{stdout, Error, Write};
+use crossterm::{
+    cursor::{Hide, MoveTo, Show},
+    style::{Attribute, Print},
+    terminal::{
+        disable_raw_mode, enable_raw_mode, size, Clear, ClearType, DisableLineWrap, EnableLineWrap,
+        EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
+    },
+    queue,
+    Command,
+};
 
 /// Represents the Terminal.
 /// Edge Case for platforms where `usize` < `u16`:
@@ -147,6 +129,14 @@ impl Terminal {
 
     pub fn print_inverted_row(row: usize, line_text: &str) -> Result<(), Error> {
         let width = Self::size()?.width;
-        Self::print_row(row, &format!("{}{:width$.width$}{}", Attribute::Reverse, line_text, Attribute::Reset))
+        Self::print_row(
+            row,
+            &format!(
+                "{}{:width$.width$}{}",
+                Attribute::Reverse,
+                line_text,
+                Attribute::Reset
+            ),
+        )
     }
 }

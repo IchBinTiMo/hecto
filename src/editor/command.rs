@@ -1,14 +1,13 @@
-use crossterm::event::{
-    Event, 
-    KeyCode::{
-        self, Backspace, Char, Delete, Down, End, Enter, Home, Left, PageDown, PageUp, Right, Up, Tab
-    },
-    KeyEvent, KeyModifiers
-};
-
-use std::convert::TryFrom;
-
 use super::Size;
+use crossterm::event::{
+    Event,
+    KeyCode::{
+        self, Backspace, Char, Delete, Down, End, Enter, Home, Left, PageDown, PageUp, Right, Tab,
+        Up,
+    },
+    KeyEvent, KeyModifiers,
+};
+use std::convert::TryFrom;
 
 #[derive(Clone, Copy)]
 pub enum Move {
@@ -19,14 +18,16 @@ pub enum Move {
     Up,
     Down,
     Left,
-    Right
+    Right,
 }
 
 impl TryFrom<KeyEvent> for Move {
     type Error = String;
 
     fn try_from(event: KeyEvent) -> Result<Self, Self::Error> {
-        let KeyEvent { code, modifiers, ..} = event;
+        let KeyEvent {
+            code, modifiers, ..
+        } = event;
 
         if modifiers == KeyModifiers::NONE {
             match code {
@@ -38,7 +39,7 @@ impl TryFrom<KeyEvent> for Move {
                 PageUp => Ok(Self::PageUp),
                 Home => Ok(Self::StartOfLine),
                 End => Ok(Self::EndOfLine),
-                _ => Err(format!("Unknown move: {code:?}"))
+                _ => Err(format!("Unknown move: {code:?}")),
             }
         } else {
             Err(format!("Unknown move: {code:?} or {modifiers:?}"))
@@ -52,14 +53,15 @@ pub enum Edit {
     InsertNewline,
     Delete,
     DeleteBackward,
-
 }
 
 impl TryFrom<KeyEvent> for Edit {
     type Error = String;
 
     fn try_from(event: KeyEvent) -> Result<Self, Self::Error> {
-        let KeyEvent { code, modifiers, ..} = event;
+        let KeyEvent {
+            code, modifiers, ..
+        } = event;
 
         match (code, modifiers) {
             (Char(character), KeyModifiers::NONE | KeyModifiers::SHIFT) => {
@@ -82,7 +84,7 @@ pub enum System {
     Save,
     Resize(Size),
     Quit,
-    Dismiss
+    Dismiss,
 }
 
 impl TryFrom<KeyEvent> for System {
@@ -98,7 +100,7 @@ impl TryFrom<KeyEvent> for System {
                 Char('s') => Ok(Self::Save),
                 _ => Err(format!("Unknown CONTROL+{code:?} combination")),
             }
-        } else if modifiers == KeyModifiers::NONE && matches!(code, KeyCode::Esc){
+        } else if modifiers == KeyModifiers::NONE && matches!(code, KeyCode::Esc) {
             Ok(Self::Dismiss)
         } else {
             Err(format!(
@@ -121,8 +123,15 @@ impl TryFrom<Event> for Command {
 
     fn try_from(event: Event) -> Result<Self, Self::Error> {
         match event {
-            Event::Key(key_event) => Edit::try_from(key_event).map(Command::Edit).or_else(|_| Move::try_from(key_event).map(Command::Move)).or_else(|_| System::try_from(key_event).map(Command::System)).map_err(|_err| format!("Event not supported: {key_event:?}")),
-            Event::Resize(width_u16, height_u16) => Ok(Self::System(System::Resize(Size { width: width_u16 as usize, height: height_u16 as usize }))),
+            Event::Key(key_event) => Edit::try_from(key_event)
+                .map(Command::Edit)
+                .or_else(|_| Move::try_from(key_event).map(Command::Move))
+                .or_else(|_| System::try_from(key_event).map(Command::System))
+                .map_err(|_err| format!("Event not supported: {key_event:?}")),
+            Event::Resize(width_u16, height_u16) => Ok(Self::System(System::Resize(Size {
+                width: width_u16 as usize,
+                height: height_u16 as usize,
+            }))),
             _ => Err(format!("Event not supported: {event:?}")),
         }
     }

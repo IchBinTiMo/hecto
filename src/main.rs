@@ -14,8 +14,5 @@ use editor::Editor;
     clippy::integer_division
 )]
 fn main() {
-    // let editor: Editor = Editor::default();
-    // editor.run(); // same as Editor::run(&editor);
-
     Editor::new().unwrap().run();
 }

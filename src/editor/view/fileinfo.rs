@@ -24,10 +24,13 @@ impl FileInfo {
     }
 }
 
-
 impl Display for FileInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let name = self.get_path().and_then(|p| p.file_name()).and_then(|name| name.to_str()).unwrap_or("Untitled");
+        let name = self
+            .get_path()
+            .and_then(|p| p.file_name())
+            .and_then(|name| name.to_str())
+            .unwrap_or("Untitled");
 
         write!(f, "{}", name)
     }
