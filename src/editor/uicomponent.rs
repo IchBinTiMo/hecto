@@ -1,10 +1,10 @@
 use std::io::Error;
 
-use super::terminal::Size;
+use super::Size;
 
 pub trait UIComponent {
     // marks the component as needing to be redrawn
-    fn mark_redraw(&mut self, value: bool);
+    fn set_needs_redraw(&mut self, value: bool);
 
     // Determines if the component needs to be redrawn
     fn needs_redraw(&self) -> bool;
@@ -12,7 +12,7 @@ pub trait UIComponent {
     // Update the size andmarks as redraw needed
     fn resize(&mut self, size: Size) {
         self.set_size(size);
-        self.mark_redraw(true);
+        self.set_needs_redraw(true);
     }
 
     // Update the size.
@@ -20,10 +20,10 @@ pub trait UIComponent {
     fn set_size(&mut self, size: Size);
 
     // Draw the component if it's visible and in need of redrawing
-    fn render(&mut self, origin_y: usize) {
+    fn render(&mut self, origin_row: usize) {
         if self.needs_redraw() {
-            match self.draw(origin_y) {
-                Ok(()) => self.mark_redraw(false),
+            match self.draw(origin_row) {
+                Ok(()) => self.set_needs_redraw(false),
                 Err(err) => {
                     #[cfg(debug_assertions)]
                     {
@@ -34,6 +34,6 @@ pub trait UIComponent {
         }
     }
 
-    fn draw(&mut self, origin_y: usize) -> Result<(), Error>;
+    fn draw(&mut self, origin_row: usize) -> Result<(), Error>;
 
 }

@@ -1,13 +1,21 @@
 use std::{cmp::min, io::Error};
 
 
-use self::line::Line;
-use super::{terminal::{Position, Size, Terminal}, command::{Edit, Move}, uicomponent::UIComponent, DocumentStatus, NAME, VERSION};
-mod buffer;
-// mod location;
-mod line;
-
+// use self::line::Line;
+// use super::{terminal::{Position, Size, Terminal}, command::{Edit, Move}, uicomponent::UIComponent, DocumentStatus, NAME, VERSION};
+use super::{
+    command::{Edit, Move},
+    DocumentStatus, Line, Position, Size, Terminal, UIComponent, NAME, VERSION,
+};
 use buffer::Buffer;
+use fileinfo::FileInfo;
+
+mod buffer;
+mod fileinfo;
+// mod location;
+// mod line;
+
+// use buffer::Buffer;
 // use location::Location;
 
 #[derive(Clone, Copy, Default)]
@@ -50,6 +58,10 @@ impl View {
             file_name: format!("{}", self.buffer.file_info),
             is_modified: self.buffer.dirty,
         }
+    }
+
+    pub const fn is_file_loaded(&self) -> bool {
+        self.buffer.is_file_loaded()
     }
 
     // pub fn render(&mut self) {
@@ -129,7 +141,7 @@ impl View {
     //         height: to.height.saturating_sub(self.margin_bottom),
     //     };
     //     self.scroll_text_location_into_view();
-    //     self.mark_redraw(true);
+    //     self.set_needs_redraw(true);
     // }
 
     fn delete_char_backward(&mut self) {
@@ -142,7 +154,7 @@ impl View {
 
     fn delete_char(&mut self) {
         self.buffer.delete_char(self.text_location);
-        self.mark_redraw(true);
+        self.set_needs_redraw(true);
     }
 
     fn insert_char(&mut self, character: char) {
@@ -158,14 +170,14 @@ impl View {
             self.handle_move_command(Move::Right);
         }
 
-        self.mark_redraw(true);
+        self.set_needs_redraw(true);
     }
 
     fn insert_new_line(&mut self) {
         self.buffer.insert_new_line(self.text_location);
         // self.move_text_location(Direction::Right);
         self.handle_move_command(Move::Right);
-        self.mark_redraw(true);
+        self.set_needs_redraw(true);
     }
 
     // #[allow(clippy::arithmetic_side_effects)]
@@ -229,7 +241,7 @@ impl View {
         };
 
         if offset_changed{
-            self.mark_redraw(true);
+            self.set_needs_redraw(true);
         }
 
         self.needs_redraw = offset_changed || self.needs_redraw;
@@ -248,7 +260,7 @@ impl View {
         };
 
         if offset_changed{
-            self.mark_redraw(true);
+            self.set_needs_redraw(true);
         }
         self.needs_redraw = self.needs_redraw || offset_changed;
     }
@@ -330,16 +342,20 @@ impl View {
     pub fn load_file(&mut self, file_name: &str) -> Result<(), Error> {
         let buffer = Buffer::load_file(file_name)?;
         self.buffer = buffer;
-        self.mark_redraw(true);
+        self.set_needs_redraw(true);
         Ok(())
         // if let Ok(buffer) = Buffer::load_file(file_name) {
         //     self.buffer = buffer;
-        //     self.mark_redraw(true);
+        //     self.set_needs_redraw(true);
         // }
     }
 
     pub fn save_file(&mut self) -> Result<(), Error> {
         self.buffer.save()
+    }
+
+    pub fn save_as(&mut self, file_name: &str) -> Result<(), Error> {
+        self.buffer.save_as(file_name)
     }
 }
 
@@ -356,7 +372,7 @@ impl View {
 // }
 
 impl UIComponent for View {
-    fn mark_redraw(&mut self, value: bool) {
+    fn set_needs_redraw(&mut self, value: bool) {
         self.needs_redraw = value;
     }
 
@@ -369,15 +385,15 @@ impl UIComponent for View {
         self.scroll_text_location_into_view();
     }
 
-    fn draw(&mut self, origin_y: usize) -> Result<(), Error> {
+    fn draw(&mut self, origin_row: usize) -> Result<(), Error> {
         let Size {width, height} = self.size;
-        let end_y = origin_y.saturating_add(height);
+        let end_y = origin_row.saturating_add(height);
 
         #[allow(clippy::integer_division)]
         let top_third = height / 3;
         let scroll_top = self.scroll_offset.row;
-        for current_row in origin_y..end_y {
-            let line_idx = current_row.saturating_sub(origin_y).saturating_add(scroll_top);
+        for current_row in origin_row..end_y {
+            let line_idx = current_row.saturating_sub(origin_row).saturating_add(scroll_top);
 
             if let Some(line) = self.buffer.lines.get(line_idx) {
                 let left = self.scroll_offset.col;

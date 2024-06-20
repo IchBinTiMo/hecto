@@ -1,8 +1,10 @@
 use std::io::Error;
 
 use super::{
-    terminal::{Size, Terminal},
-    uicomponent::UIComponent,
+    // terminal::{Size, Terminal},
+    Size,
+    Terminal,
+    UIComponent,
     DocumentStatus
 };
 
@@ -46,14 +48,14 @@ impl StatusBar {
 
     //     self.position_y = position_y;
     //     self.is_visible = is_visible;
-    //     self.mark_redraw(true);
+    //     self.set_needs_redraw(true);
     //     // self.position_y = size.height.saturating_sub(self.margin_bottom).saturating_sub(1);
     // }
 
     pub fn update_status(&mut self, new_status: DocumentStatus) {
         if new_status != self.current_status {
             self.current_status = new_status;
-            self.mark_redraw(true);
+            self.set_needs_redraw(true);
         }
     }
 
@@ -97,7 +99,7 @@ impl StatusBar {
 }
 
 impl UIComponent for StatusBar {
-    fn mark_redraw(&mut self, should_redraw: bool) {
+    fn set_needs_redraw(&mut self, should_redraw: bool) {
         self.needs_redraw = should_redraw;
     }
 
@@ -109,7 +111,7 @@ impl UIComponent for StatusBar {
         self.size = size;
     }
 
-    fn draw(&mut self, origin_y: usize) -> Result<(), Error> {
+    fn draw(&mut self, origin_row: usize) -> Result<(), Error> {
         
         let line_count: String = self.current_status.line_count_to_string();
         let modified_indicator: String = self.current_status.modified_indicator_to_string();
@@ -126,7 +128,7 @@ impl UIComponent for StatusBar {
             String::new()
         };
 
-        Terminal::print_inverted_row(origin_y, &to_print)?;
+        Terminal::print_inverted_row(origin_row, &to_print)?;
 
         Ok(())
     }

@@ -1,8 +1,9 @@
 use std::io::Error;
 
 use super::{
-    terminal::{Size, Terminal},
-    uicomponent::UIComponent,
+    Terminal,
+    UIComponent,
+    Size
 };
 
 #[derive(Default)]
@@ -15,13 +16,13 @@ impl MessageBar {
     pub fn update_message(&mut self, new_message: &str) {
         if new_message != self.current_message {
             self.current_message = new_message.to_string();
-            self.mark_redraw(true);
+            self.set_needs_redraw(true);
         }
     }
 }
 
 impl UIComponent for MessageBar {
-    fn mark_redraw(&mut self, should_redraw: bool) {
+    fn set_needs_redraw(&mut self, should_redraw: bool) {
         self.needs_redraw = should_redraw;
     }
 

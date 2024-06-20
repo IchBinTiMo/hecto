@@ -6,26 +6,28 @@ use crossterm::terminal::{
 use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
 
-#[derive(Clone, Copy, Default)]
-pub struct Size {
-    pub height: usize,
-    pub width: usize,
-}
+use super::{Position, Size};
 
-#[derive(Clone, Copy, Default)]
-pub struct Position {
-    pub col: usize,
-    pub row: usize,
-}
+// #[derive(Clone, Copy, Default)]
+// pub struct Size {
+//     pub height: usize,
+//     pub width: usize,
+// }
 
-impl Position {
-    pub const fn saturating_sub(self, other: Self) -> Self {
-        Self {
-            row: self.row.saturating_sub(other.row),
-            col: self.col.saturating_sub(other.col),
-        }
-    }
-}
+// #[derive(Clone, Copy, Default)]
+// pub struct Position {
+//     pub col: usize,
+//     pub row: usize,
+// }
+
+// impl Position {
+//     pub const fn saturating_sub(self, other: Self) -> Self {
+//         Self {
+//             row: self.row.saturating_sub(other.row),
+//             col: self.col.saturating_sub(other.col),
+//         }
+//     }
+// }
 
 /// Represents the Terminal.
 /// Edge Case for platforms where `usize` < `u16`:
