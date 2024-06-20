@@ -2,7 +2,7 @@ use std::{cmp::min, io::Error};
 
 
 use self::line::Line;
-use super::{terminal::{Position, Size, Terminal}, editorcommand::{EditorCommand, Direction}, uicomponent::UIComponent, DocumentStatus, NAME, VERSION};
+use super::{terminal::{Position, Size, Terminal}, command::{Edit, Move}, uicomponent::UIComponent, DocumentStatus, NAME, VERSION};
 mod buffer;
 // mod location;
 mod line;
@@ -84,17 +84,43 @@ impl View {
     //     self.needs_redraw = false;
     // }
 
-    pub fn handle_command(&mut self, command: EditorCommand) {
+    // pub fn handle_command(&mut self, command: EditorCommand) {
+    //     match command {
+    //         // EditorCommand::Resize(size) => self.resize(size),
+    //         EditorCommand::Move(direction) => self.move_text_location(direction),
+    //         EditorCommand::Insert(character) => self.insert_char(character),
+    //         EditorCommand::Backspace => self.delete_char_backward(),
+    //         EditorCommand::Delete => self.delete_char(),
+    //         EditorCommand::Enter => self.insert_new_line(),
+    //         EditorCommand::Save => self.save_file(),
+    //         EditorCommand::Quit | EditorCommand::Resize(_) => {},
+    //     }
+    // }
+
+    pub fn handle_edit_command(&mut self, command: Edit) {
         match command {
-            // EditorCommand::Resize(size) => self.resize(size),
-            EditorCommand::Move(direction) => self.move_text_location(direction),
-            EditorCommand::Insert(character) => self.insert_char(character),
-            EditorCommand::Backspace => self.delete_char_backward(),
-            EditorCommand::Delete => self.delete_char(),
-            EditorCommand::Enter => self.insert_new_line(),
-            EditorCommand::Save => self.save_file(),
-            EditorCommand::Quit | EditorCommand::Resize(_) => {},
+            // Edit::Move(direction) => self.move_text_location(direction),
+            Edit::Insert(character) => self.insert_char(character),
+            Edit::DeleteBackward => self.delete_char_backward(),
+            Edit::Delete => self.delete_char(),
+            Edit::InsertNewline => self.insert_new_line(),
         }
+    }
+
+    pub fn handle_move_command(&mut self, command: Move) {
+        let Size {height, ..} = self.size;
+        match command {
+            Move::Up => self.move_up(1),
+            Move::Down => self.move_down(1),
+            Move::Left => self.move_left(),
+            Move::Right => self.move_right(),
+            Move::PageUp => self.move_up(height.saturating_sub(1)),
+            Move::PageDown => self.move_down(height.saturating_sub(1)),
+            Move::StartOfLine => self.move_to_start_of_line(),
+            Move::EndOfLine => self.move_to_end_of_line(),
+        }
+
+        self.scroll_text_location_into_view();
     }
 
     // fn resize(&mut self, to: Size) {
@@ -108,7 +134,8 @@ impl View {
 
     fn delete_char_backward(&mut self) {
         if self.text_location.line_index != 0 || self.text_location.grapheme_index != 0 {
-            self.move_text_location(Direction::Left);
+            // self.move_text_location(Direction::Left);
+            self.handle_move_command(Move::Left);
             self.delete_char();
         }
     }
@@ -128,7 +155,7 @@ impl View {
         let grapheme_delta = new_len.saturating_sub(old_len);
 
         if grapheme_delta > 0 {
-            self.move_text_location(Direction::Right);
+            self.handle_move_command(Move::Right);
         }
 
         self.mark_redraw(true);
@@ -136,28 +163,29 @@ impl View {
 
     fn insert_new_line(&mut self) {
         self.buffer.insert_new_line(self.text_location);
-        self.move_text_location(Direction::Right);
+        // self.move_text_location(Direction::Right);
+        self.handle_move_command(Move::Right);
         self.mark_redraw(true);
     }
 
-    #[allow(clippy::arithmetic_side_effects)]
-    fn move_text_location(&mut self, direction: Direction) {
-        let Size { height, .. } = self.size;
+    // #[allow(clippy::arithmetic_side_effects)]
+    // fn move_text_location(&mut self, direction: Direction) {
+    //     let Size { height, .. } = self.size;
 
-        match direction {
-            Direction::Up => self.move_up(1),
-            Direction::Down => self.move_down(1),
-            Direction::Left => self.move_left(),
-            Direction::Right => self.move_right(),
-            Direction::PageUp => self.move_up(height.saturating_sub(1)),
-            Direction::PageDown => self.move_down(height.saturating_sub(1)),
-            Direction::Home => self.move_to_start_of_line(),
-            Direction::End => self.move_to_end_of_line(),
-        }
+    //     match direction {
+    //         Direction::Up => self.move_up(1),
+    //         Direction::Down => self.move_down(1),
+    //         Direction::Left => self.move_left(),
+    //         Direction::Right => self.move_right(),
+    //         Direction::PageUp => self.move_up(height.saturating_sub(1)),
+    //         Direction::PageDown => self.move_down(height.saturating_sub(1)),
+    //         Direction::Home => self.move_to_start_of_line(),
+    //         Direction::End => self.move_to_end_of_line(),
+    //     }
 
-        self.scroll_text_location_into_view();
+    //     self.scroll_text_location_into_view();
 
-    }
+    // }
 
     fn render_line(at: usize, lines: &str) -> Result<(), Error> {
         Terminal::print_row(at, lines)
@@ -299,15 +327,19 @@ impl View {
         self.text_location.line_index = min(self.text_location.line_index, self.buffer.height());
     }
 
-    pub fn load_file(&mut self, file_name: &str) {
-        if let Ok(buffer) = Buffer::load_file(file_name) {
-            self.buffer = buffer;
-            self.mark_redraw(true);
-        }
+    pub fn load_file(&mut self, file_name: &str) -> Result<(), Error> {
+        let buffer = Buffer::load_file(file_name)?;
+        self.buffer = buffer;
+        self.mark_redraw(true);
+        Ok(())
+        // if let Ok(buffer) = Buffer::load_file(file_name) {
+        //     self.buffer = buffer;
+        //     self.mark_redraw(true);
+        // }
     }
 
-    pub fn save_file(&mut self) {
-        let _ = self.buffer.save();
+    pub fn save_file(&mut self) -> Result<(), Error> {
+        self.buffer.save()
     }
 }
 

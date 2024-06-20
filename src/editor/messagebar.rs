@@ -12,9 +12,9 @@ pub struct MessageBar {
 }
 
 impl MessageBar {
-    pub fn update_message(&mut self, new_message: String) {
+    pub fn update_message(&mut self, new_message: &str) {
         if new_message != self.current_message {
-            self.current_message = new_message;
+            self.current_message = new_message.to_string();
             self.mark_redraw(true);
         }
     }
