@@ -2,6 +2,8 @@ use std::{fmt, ops::Range};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+// use std::{thread::sleep, time::Duration};
+
 #[derive(Copy, Clone)]
 enum GraphemeWidth {
     Half,
@@ -138,7 +140,8 @@ impl Line {
             if idx == at {
                 result.push(character);
             }
-
+            // dbg!("", &fragment.grapheme, idx == at, idx, at);
+            // sleep(Duration::from_millis(100));
             result.push_str(&fragment.grapheme);
         }
 
@@ -149,9 +152,9 @@ impl Line {
         self.fragments = Self::str_to_fragments(&result);
     }
 
-    pub fn append_char(&mut self, character: char) {
-        self.insert_char(character, self.grapheme_count());
-    }
+    // pub fn append_char(&mut self, character: char) {
+    //     self.insert_char(character, self.grapheme_count());
+    // }
 
     pub fn delete_char(&mut self, at: usize) {
         let mut result = String::new();
@@ -165,9 +168,9 @@ impl Line {
         self.fragments = Self::str_to_fragments(&result);
     }
 
-    pub fn delete_last(&mut self) {
-        self.delete_char(self.grapheme_count().saturating_sub(1));
-    }
+    // pub fn delete_last(&mut self) {
+    //     self.delete_char(self.grapheme_count().saturating_sub(1));
+    // }
 
     pub fn append(&mut self, other: &Self) {
         let mut concat = self.to_string();

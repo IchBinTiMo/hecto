@@ -20,7 +20,7 @@ mod view;
 use self::command::{
     Command::{self, Edit, Move, System},
     Edit::InsertNewline,
-    System::{Dismiss, Quit, Resize, Save},
+    System::{Dismiss, Quit, Resize, Save, Search},
 };
 use commandbar::CommandBar;
 use documentstatus::DocumentStatus;
@@ -69,7 +69,7 @@ impl Editor {
 
         editor
             .message_bar
-            .update_message("HELP: Ctrl-S = save | Ctrl-Q = quit");
+            .update_message("HELP: Ctrl-F = find | Ctrl-S = save | Ctrl-Q = quit");
 
         if let Some(file_name) = args.get(1) {
             if editor.view.load_file(file_name).is_err() {
@@ -174,19 +174,31 @@ impl Editor {
                     self.handle_save();
                 }
             }
+            System(Search) => {
+                if self.command_bar.is_none() {
+                    self.handle_search();
+                }
+            }
             System(Dismiss) => {
                 if self.command_bar.is_some() {
                     self.dismiss_prompt();
-                    self.message_bar.update_message("Save aborted.");
+                    // self.message_bar.update_message("Save aborted.");
                 }
             }
             Edit(edit_command) => {
                 if let Some(command_bar) = &mut self.command_bar {
                     if matches!(edit_command, InsertNewline) {
-                        let file_name = command_bar.value();
-                        self.dismiss_prompt();
-                        self.save_file(Some(&file_name));
+                        if command_bar.prompt() == "Save as: " {
+                            let file_name: String = command_bar.value();
+                            self.dismiss_prompt();
+                            self.save_file(Some(&file_name));
+                        }
                     } else {
+                        // if command_bar.prompt() == "Search: " {
+                        //     let to_search: String = command_bar.value();
+                        //     // self.dismiss_prompt();
+                        //     self.search(to_search);
+                        // }
                         command_bar.handle_edit_command(edit_command);
                     }
                 } else {
@@ -194,22 +206,38 @@ impl Editor {
                 }
             }
             Move(move_command) => {
-                if self.command_bar.is_none() {
+                if let Some(command_bar) = &mut self.command_bar {
+                    // self.view.handle_move_command(move_command, true);
+                    command_bar.handle_move_command(move_command);
+                } else {
                     self.view.handle_move_command(move_command);
                 }
+                // if self.command_bar.is_none() {
+                //     self.view.handle_move_command(move_command);
+                // } else {
+                    
+                // }
             }
         }
     }
 
     fn dismiss_prompt(&mut self) {
-        self.command_bar = None;
+        if let Some(command_bar) = self.command_bar.take() {
+            if command_bar.prompt() == "Save as: " {
+                self.message_bar.update_message("Save aborted.");
+            } else if command_bar.prompt() == "Search: " {
+                self.message_bar.update_message("HELP: Ctrl-F = find | Ctrl-S = save | Ctrl-Q = quit");
+            }
+        }
+        // self.command_bar = None;
         self.message_bar.set_needs_redraw(true);
     }
 
-    fn show_prompt(&mut self) {
+    fn show_prompt(&mut self, prompt: &str) {
         let mut command_bar = CommandBar::default();
 
-        command_bar.set_prompt("Save as:");
+        command_bar.set_prompt(prompt);
+        command_bar.set_caret_postion(prompt.len());
         command_bar.resize(Size {
             height: 1,
             width: self.terminal_size.width,
@@ -222,9 +250,17 @@ impl Editor {
         if self.view.is_file_loaded() {
             self.save_file(None);
         } else {
-            self.show_prompt();
+            self.show_prompt("Save as: ");
         }
     }
+
+    fn handle_search(&mut self) {
+        self.show_prompt("Search: ");
+    }
+
+    // fn search(&mut self, to_search: String) {
+        
+    // }
 
     fn save_file(&mut self, file_name: Option<&str>) {
         let result = if let Some(name) = file_name {
