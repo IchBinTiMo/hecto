@@ -82,6 +82,7 @@ impl TryFrom<KeyEvent> for Edit {
 #[derive(Clone, Copy)]
 pub enum System {
     Save,
+    Search,
     Resize(Size),
     Quit,
     Dismiss,
@@ -98,6 +99,7 @@ impl TryFrom<KeyEvent> for System {
             match code {
                 Char('q') => Ok(Self::Quit),
                 Char('s') => Ok(Self::Save),
+                Char('f') => Ok(Self::Search),
                 _ => Err(format!("Unknown CONTROL+{code:?} combination")),
             }
         } else if modifiers == KeyModifiers::NONE && matches!(code, KeyCode::Esc) {

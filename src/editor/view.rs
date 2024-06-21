@@ -2,6 +2,7 @@ use super::{
     command::{Edit, Move},
     DocumentStatus, Line, Position, Size, Terminal, UIComponent, NAME, VERSION,
 };
+// use std::{thread, time::Duration};
 use buffer::Buffer;
 use fileinfo::FileInfo;
 use std::{cmp::min, io::Error};

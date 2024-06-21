@@ -47,15 +47,22 @@ impl CommandBar {
 
     pub fn set_prompt(&mut self, prompt: &str) {
         self.prompt = prompt.to_string();
+        self.set_caret_postion(self.prompt.len());
+        self.set_needs_redraw(true);
+    }
+
+    pub fn clear_value(&mut self) {
+        self.value = Line::default();
+        self.set_needs_redraw(true);
     }
 
     pub fn set_caret_postion(&mut self, col: usize) {
         self.caret_position.col = col;
     }
 
-    pub fn prompt(&self) -> &str {
-        &self.prompt
-    }
+    // pub fn prompt(&self) -> &str {
+    //     &self.prompt
+    // }
 
     fn move_left(&mut self) {
         self.caret_position.col = max(self.caret_position.col.saturating_sub(1), self.prompt.len());
