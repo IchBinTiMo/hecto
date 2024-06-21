@@ -284,6 +284,7 @@ impl UIComponent for View {
 
     fn draw(&mut self, origin_row: usize) -> Result<(), Error> {
         let Size { width, height } = self.size;
+        // assert_eq!(self.scroll_offset.row, 0);
         let end_y = origin_row.saturating_add(height);
 
         #[allow(clippy::integer_division)]
@@ -297,7 +298,6 @@ impl UIComponent for View {
             if let Some(line) = self.buffer.lines.get(line_idx) {
                 let left = self.scroll_offset.col;
                 let right = self.scroll_offset.col.saturating_add(width);
-
                 Self::render_line(current_row, &line.get_visible_graphemes(left..right))?;
             } else if current_row == top_third && self.buffer.is_empty() {
                 Self::render_line(current_row, &Self::build_welcome_message(width))?;

@@ -39,7 +39,7 @@ impl Line {
         line_str
             .graphemes(true)
             .map(|grapheme| {
-                let (replacement, rendered_width) = Self::replacement_charter(grapheme)
+                let (replacement, rendered_width) = Self::replacement_character(grapheme)
                     .map_or_else(
                         || {
                             let unicode_width: usize = grapheme.width();
@@ -61,7 +61,7 @@ impl Line {
             .collect()
     }
 
-    fn replacement_charter(for_str: &str) -> Option<char> {
+    fn replacement_character(for_str: &str) -> Option<char> {
         let width: usize = for_str.width();
 
         match for_str {
@@ -105,8 +105,8 @@ impl Line {
                     result.push_str(&fragment.grapheme);
                 }
 
-                current_pos = fragment_end;
             }
+            current_pos = fragment_end;
         }
 
         result
