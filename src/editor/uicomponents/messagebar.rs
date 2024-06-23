@@ -1,4 +1,5 @@
-use super::{Size, Terminal, UIComponent};
+use super::super::{Size, Terminal,};
+use super::UIComponent;
 use std::io::Error;
 
 #[derive(Default)]

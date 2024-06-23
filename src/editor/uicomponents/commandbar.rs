@@ -1,4 +1,5 @@
-use super::{command::{Edit, Move}, Line, Position, Size, Terminal, UIComponent};
+use super::super::{command::{Edit, Move}, Line, Position, Size, Terminal};
+use super::UIComponent;
 use std::{cmp::{max, min}, io::Error};
 
 #[derive(Default)]

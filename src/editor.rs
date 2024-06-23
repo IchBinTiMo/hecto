@@ -3,16 +3,16 @@ use std::{env, io::Error, panic::{set_hook, take_hook}
 };
 
 mod command;
-mod commandbar;
+// mod commandbar;
 mod documentstatus;
 mod line;
-mod messagebar;
+// mod messagebar;
 mod position;
 mod size;
-mod statusbar;
+// mod statusbar;
 mod terminal;
-mod uicomponent;
-mod view;
+mod uicomponents;
+// mod view;
 
 use self::command::{
     Command::{self, Edit, Move, System},
@@ -20,16 +20,17 @@ use self::command::{
     Move::{Down, Up},
     System::{Dismiss, Quit, Resize, Save, Search},
 };
-use commandbar::CommandBar;
+// use commandbar::CommandBar;
 use documentstatus::DocumentStatus;
 use line::Line;
-use messagebar::MessageBar;
+// use messagebar::MessageBar;
 use position::Position;
 use size::Size;
-use statusbar::StatusBar;
+// use statusbar::StatusBar;
 use terminal::Terminal;
-use uicomponent::UIComponent;
-use view::View;
+use uicomponents::{CommandBar, MessageBar, StatusBar, UIComponent, View};
+// use uicomponent::UIComponent;
+// use view::View;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -398,11 +399,8 @@ impl Editor {
                 let query = self.command_bar.value();
                 self.view.search(&query);
             },
-// <<<<<<< HEAD
-// =======
             Move(Up) => self.view.prev_search_result(),
             Move(Down) => self.view.next_search_result(),
-// >>>>>>> rewrote simple search
             Move(move_command) => self.command_bar.handle_move_command(move_command),
         }
     }

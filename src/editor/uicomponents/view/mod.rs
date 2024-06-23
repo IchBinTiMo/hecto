@@ -1,7 +1,8 @@
-use super::{
+use super::super::{
     command::{Edit, Move},
-    DocumentStatus, Line, Position, Size, Terminal, UIComponent, NAME, VERSION,
+    DocumentStatus, Line, Position, Size, Terminal, NAME, VERSION,
 };
+use super::UIComponent;
 // use std::{thread, time::Duration};
 use buffer::Buffer;
 use fileinfo::FileInfo;
@@ -98,11 +99,25 @@ impl View {
     }
 
     pub fn next_search_result(&mut self) {
-        
+        if let Some(search_info) = &mut self.search_info {
+            if let Some(location) = &search_info.result {
+                let len: usize = location.len();
+                search_info.current_idx = Some((search_info.current_idx.unwrap() + 1) % len);
+                self.text_location = location[search_info.current_idx.unwrap()];
+                dbg!(search_info.current_idx);
+            }
+        }
     }
 
     pub fn prev_search_result(&mut self) {
-        
+        if let Some(search_info) = &mut self.search_info {
+            if let Some(location) = &search_info.result {
+                let len: usize = location.len();
+                search_info.current_idx = Some((search_info.current_idx.unwrap() + len - 1) % len);
+                self.text_location = location[search_info.current_idx.unwrap()];
+                dbg!(search_info.current_idx);
+            }
+        }
     }
 
     // END SECTION

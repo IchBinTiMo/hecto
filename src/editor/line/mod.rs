@@ -2,32 +2,37 @@ use std::{fmt, ops::Range};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use graphemewidth::GraphemeWidth;
+use textfragment::TextFragment;
 // use std::{thread::sleep, time::Duration};
+
+mod graphemewidth;
+mod textfragment;
 
 type GraphemeIdx = usize;
 // type ByteIdx = usize;
 
-#[derive(Copy, Clone)]
-enum GraphemeWidth {
-    Half,
-    Full,
-}
+// #[derive(Copy, Clone)]
+// enum GraphemeWidth {
+//     Half,
+//     Full,
+// }
 
-impl GraphemeWidth {
-    const fn saturating_add(self, other: usize) -> usize {
-        match self {
-            Self::Half => other.saturating_add(1),
-            Self::Full => other.saturating_add(2),
-        }
-    }
-}
+// impl GraphemeWidth {
+//     const fn saturating_add(self, other: usize) -> usize {
+//         match self {
+//             Self::Half => other.saturating_add(1),
+//             Self::Full => other.saturating_add(2),
+//         }
+//     }
+// }
 
-struct TextFragment {
-    grapheme: String,
-    rendered_width: GraphemeWidth,
-    replacement: Option<char>,
-    start_byte_idx: usize,
-}
+// struct TextFragment {
+//     grapheme: String,
+//     rendered_width: GraphemeWidth,
+//     replacement: Option<char>,
+//     start_byte_idx: usize,
+// }
 
 #[derive(Default)]
 pub struct Line {
