@@ -17,6 +17,7 @@ mod view;
 use self::command::{
     Command::{self, Edit, Move, System},
     Edit::InsertNewline,
+    Move::{Down, Up},
     System::{Dismiss, Quit, Resize, Save, Search},
 };
 use commandbar::CommandBar;
@@ -397,6 +398,11 @@ impl Editor {
                 let query = self.command_bar.value();
                 self.view.search(&query);
             },
+// <<<<<<< HEAD
+// =======
+            Move(Up) => self.view.prev_search_result(),
+            Move(Down) => self.view.next_search_result(),
+// >>>>>>> rewrote simple search
             Move(move_command) => self.command_bar.handle_move_command(move_command),
         }
     }
@@ -466,7 +472,7 @@ impl Editor {
             PromptType::None => self.message_bar.set_needs_redraw(true),
             PromptType::Save => self.command_bar.set_prompt("Save as: "),
             PromptType::Search => {
-                self.command_bar.set_prompt("Search (Esc to cancel): ");
+                self.command_bar.set_prompt("Search (Esc to cancel), ↑ and ↓ to navigate: ");
                 self.view.enter_search();
             },
         }

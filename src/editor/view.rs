@@ -5,14 +5,16 @@ use super::{
 // use std::{thread, time::Duration};
 use buffer::Buffer;
 use fileinfo::FileInfo;
+use searchinfo::SearchInfo;
 use std::{cmp::min, io::Error};
 
 mod buffer;
 mod fileinfo;
+mod searchinfo;
 
-struct SearchInfo {
-    prev_location: Location,
-}
+// struct SearchInfo {
+//     prev_location: Location,
+// }
 
 #[derive(Clone, Copy, Default)]
 pub struct Location {
@@ -48,7 +50,11 @@ impl View {
 
     pub fn enter_search(&mut self) {
         self.search_info = Some(SearchInfo {
+            current_idx: None,
             prev_location: self.text_location,
+            prev_scroll_offset: self.scroll_offset,
+            query: Line::default(),
+            result: None,
         });
     }
 
@@ -71,9 +77,32 @@ impl View {
         }
 
         if let Some(location) = self.buffer.search(query) {
-            self.text_location = location;
-            self.scroll_text_location_into_view();
+            self.search_info = Some(SearchInfo {
+                current_idx: Some(0),
+                prev_location: self.text_location,
+                prev_scroll_offset: self.scroll_offset,
+                query: Line::from(query),
+                result: Some(location),
+            });
+
+            
         }
+
+        if let Some(search_info) = &self.search_info {
+            if let Some(location) = &search_info.result {
+                self.text_location = location[search_info.current_idx.unwrap()];
+            }
+            // self.text_location = search_info.result.unwrap();
+        }
+        self.scroll_text_location_into_view();
+    }
+
+    pub fn next_search_result(&mut self) {
+        
+    }
+
+    pub fn prev_search_result(&mut self) {
+        
     }
 
     // END SECTION

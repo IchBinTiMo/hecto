@@ -27,14 +27,24 @@ impl Buffer {
         })
     }
 
-    pub fn search(&mut self, query: &str) -> Option<Location> {
+    pub fn search(&mut self, query: &str) -> Option<Vec<Location>> {
+        let mut locations = Vec::new();
+
         for (line_index, line) in self.lines.iter().enumerate() {
-            if let Some(grapheme_index) = line.search(query) {
-                return Some(Location {line_index, grapheme_index});
+            if let Some(grapheme_indices) = line.search(query) {
+                for grapheme_index in grapheme_indices {
+                    locations.push(Location { line_index, grapheme_index });
+                }
+
+                // return Some(Location {line_index, grapheme_index});
             }
         }
 
-        None
+        if locations.is_empty() {
+            None
+        } else {
+            Some(locations)
+        }
     }
 
     fn save_to_file(&self, file_info: &FileInfo) -> Result<(), Error> {

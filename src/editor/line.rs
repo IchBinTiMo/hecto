@@ -4,6 +4,9 @@ use unicode_width::UnicodeWidthStr;
 
 // use std::{thread::sleep, time::Duration};
 
+type GraphemeIdx = usize;
+// type ByteIdx = usize;
+
 #[derive(Copy, Clone)]
 enum GraphemeWidth {
     Half,
@@ -237,8 +240,17 @@ impl Line {
         }
     }
 
-    pub fn search(&self, query: &str) -> Option<usize> {
-        self.string.find(query).map(|byte_idx| self.byte_idx_to_grapheme_idx(byte_idx))
+    pub fn search(&self, query: &str) -> Option<Vec<GraphemeIdx>> {
+        // self.string.find(query).map(|byte_idx| self.byte_idx_to_grapheme_idx(byte_idx))
+        // Vec::new();
+
+        let result: Vec<GraphemeIdx> = self.string.match_indices(query).map(|(byte_idx, _)| self.byte_idx_to_grapheme_idx(byte_idx)).collect();
+
+        if result.is_empty() {
+            None
+        } else {
+            Some(result)
+        }
     }
 }
 
