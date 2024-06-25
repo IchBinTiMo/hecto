@@ -17,7 +17,7 @@ mod searchinfo;
 //     prev_location: Location,
 // }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
 pub struct Location {
     pub grapheme_index: usize,
     pub line_index: usize,
@@ -27,16 +27,18 @@ pub struct Location {
 pub struct View {
     buffer: Buffer,
     needs_redraw: bool,
-    size: Size,
+    prev_text_location: Location,
     text_location: Location,
     scroll_offset: Position,
     search_info: Option<SearchInfo>,
+    size: Size,
 }
 
 impl View {
     pub fn get_status(&self) -> DocumentStatus {
         DocumentStatus {
             total_lines: self.buffer.height(),
+            current_grapheme_index: self.text_location.grapheme_index,
             current_line_index: self.text_location.line_index,
             file_name: format!("{}", self.buffer.file_info),
             is_modified: self.buffer.dirty,
@@ -54,13 +56,14 @@ impl View {
             current_idx: None,
             prev_location: self.text_location,
             prev_scroll_offset: self.scroll_offset,
-            query: Line::default(),
+            query: None,
             result: None,
         });
     }
 
     pub fn exit_search(&mut self) {
         self.search_info = None;
+        self.set_needs_redraw(true);
     }
 
     pub fn dismiss_search(&mut self) {
@@ -69,6 +72,7 @@ impl View {
         }
 
         self.search_info = None;
+        self.set_needs_redraw(true);
         self.scroll_text_location_into_view();
     }
 
@@ -82,11 +86,13 @@ impl View {
                 current_idx: Some(0),
                 prev_location: self.text_location,
                 prev_scroll_offset: self.scroll_offset,
-                query: Line::from(query),
+                query: Some(Line::from(query)),
                 result: Some(location),
             });
 
             
+        } else {
+            self.search_info = None;
         }
 
         if let Some(search_info) = &self.search_info {
@@ -95,6 +101,7 @@ impl View {
             }
             // self.text_location = search_info.result.unwrap();
         }
+        self.set_needs_redraw(true);
         self.scroll_text_location_into_view();
     }
 
@@ -102,9 +109,17 @@ impl View {
         if let Some(search_info) = &mut self.search_info {
             if let Some(location) = &search_info.result {
                 let len: usize = location.len();
+                // let left = self.scroll_offset.col;
+                // let right = self.scroll_offset.col + self.size.col;
+                // if let Some(line) = self.buffer.lines.get(self.text_location.line_index) {
+                    // Terminal::print_annotated_row(self.text_location.line_index, &line.get_annotated_visible_substr(range, query, selected_match, search_results))
+                // }
                 search_info.current_idx = Some((search_info.current_idx.unwrap() + 1) % len);
                 self.text_location = location[search_info.current_idx.unwrap()];
-                dbg!(search_info.current_idx);
+                self.set_needs_redraw(true);
+                // Terminal::print_annotated_row(self.text_location.line_index, self.buffer.lines)
+                // dbg!(self.text_location);
+                // dbg!(self.text_location.line_index);
             }
         }
     }
@@ -115,7 +130,9 @@ impl View {
                 let len: usize = location.len();
                 search_info.current_idx = Some((search_info.current_idx.unwrap() + len - 1) % len);
                 self.text_location = location[search_info.current_idx.unwrap()];
-                dbg!(search_info.current_idx);
+                self.set_needs_redraw(true);
+                // dbg!(self.text_location);
+                // dbg!(self.text_location.line_index);
             }
         }
     }
@@ -271,11 +288,13 @@ impl View {
 
     fn move_up(&mut self, step: usize) {
         self.text_location.line_index = self.text_location.line_index.saturating_sub(step);
+        self.text_location.grapheme_index = min(self.buffer.lines[self.text_location.line_index].grapheme_count(), self.prev_text_location.grapheme_index);
         self.snap_to_valid_grapheme();
     }
 
     fn move_down(&mut self, step: usize) {
         self.text_location.line_index = self.text_location.line_index.saturating_add(step);
+        self.text_location.grapheme_index = min(self.buffer.lines[min(self.text_location.line_index, self.buffer.lines.len() - 1)].grapheme_count(), self.prev_text_location.grapheme_index);
         self.snap_to_valid_grapheme();
         self.snap_to_valid_line();
     }
@@ -294,6 +313,7 @@ impl View {
             self.move_to_start_of_line();
             self.move_down(1);
         }
+        self.prev_text_location = self.text_location;
     }
 
     #[allow(clippy::arithmetic_side_effects)]
@@ -304,6 +324,8 @@ impl View {
             self.move_up(1);
             self.move_to_end_of_line();
         }
+
+        self.prev_text_location = self.text_location;
     }
 
     fn move_to_start_of_line(&mut self) {
@@ -382,7 +404,29 @@ impl UIComponent for View {
             if let Some(line) = self.buffer.lines.get(line_idx) {
                 let left = self.scroll_offset.col;
                 let right = self.scroll_offset.col.saturating_add(width);
-                Self::render_line(current_row, &line.get_visible_graphemes(left..right))?;
+
+                let query: Option<&str> = self.search_info.as_ref().and_then(|search_info| search_info.query.as_deref());
+
+                let selected_match = (self.text_location.line_index == line_idx && query.is_some()).then_some(self.text_location.grapheme_index);
+                // let search_result = None;
+                let search_results = if let Some(search_info) = &self.search_info {
+                    if let Some(locations) = &search_info.result {
+                        let res = locations.iter().filter(|location| {
+                            location.line_index == line_idx
+                        }).map(|location| location.grapheme_index).collect::<Vec<_>>();
+                        Some(res)
+                        // Some(locations.iter().filter(|location| {
+                        //     location.line_index == line_idx
+                        // }).map(|location| location.grapheme_index).collect::<Vec<_>>())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                // dbg!(line_idx);
+                Terminal::print_annotated_row(current_row, &line.get_annotated_visible_substr(left..right, query, selected_match, search_results.clone()))?;
+                // Self::render_line(current_row, &line.get_visible_graphemes(left..right))?;
             } else if current_row == top_third && self.buffer.is_empty() {
                 Self::render_line(current_row, &Self::build_welcome_message(width))?;
             } else {

@@ -1,3 +1,6 @@
+// pub type Row = usize;
+pub type Col = usize;
+
 #[derive(Copy, Clone, Default)]
 pub struct Position {
     pub col: usize,

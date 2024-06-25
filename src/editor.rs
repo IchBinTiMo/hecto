@@ -2,6 +2,7 @@ use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
 use std::{env, io::Error, panic::{set_hook, take_hook}
 };
 
+mod annotatedstring;
 mod command;
 // mod commandbar;
 mod documentstatus;
@@ -21,10 +22,11 @@ use self::command::{
     System::{Dismiss, Quit, Resize, Save, Search},
 };
 // use commandbar::CommandBar;
+use annotatedstring::{AnnotatedString, AnnotationType};
 use documentstatus::DocumentStatus;
 use line::Line;
 // use messagebar::MessageBar;
-use position::Position;
+use position::{Col, Position};
 use size::Size;
 // use statusbar::StatusBar;
 use terminal::Terminal;
