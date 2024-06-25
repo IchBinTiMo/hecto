@@ -33,10 +33,11 @@ impl Buffer {
         for (line_index, line) in self.lines.iter().enumerate() {
             if let Some(grapheme_indices) = line.search(query) {
                 for grapheme_index in grapheme_indices {
-                    locations.push(Location { line_index, grapheme_index });
+                    locations.push(Location {
+                        line_index,
+                        grapheme_index,
+                    });
                 }
-
-                // return Some(Location {line_index, grapheme_index});
             }
         }
 

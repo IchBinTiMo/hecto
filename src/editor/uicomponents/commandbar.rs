@@ -1,6 +1,12 @@
-use super::super::{command::{Edit, Move}, Line, Position, Size, Terminal};
+use super::super::{
+    command::{Edit, Move},
+    Line, Position, Size, Terminal,
+};
 use super::UIComponent;
-use std::{cmp::{max, min}, io::Error};
+use std::{
+    cmp::{max, min},
+    io::Error,
+};
 
 #[derive(Default)]
 pub struct CommandBar {
@@ -17,7 +23,7 @@ impl CommandBar {
             Edit::Insert(character) => self.insert_char(character, self.caret_position_col()),
             Edit::Delete => self.delete_char(self.caret_position_col()),
             Edit::DeleteBackward => self.delete_char_backward(self.caret_position_col()),
-            Edit::InsertNewline => {},
+            Edit::InsertNewline => {}
         }
 
         self.set_needs_redraw(true);
@@ -33,12 +39,6 @@ impl CommandBar {
     }
 
     pub fn caret_position_col(&self) -> usize {
-        // let max_width = self
-        //     .prompt
-        //     .len()
-        //     .saturating_add(self.value.grapheme_count());
-
-        // min(max_width, self.size.width)
         min(self.caret_position.col, self.size.width)
     }
 
@@ -61,16 +61,18 @@ impl CommandBar {
         self.caret_position.col = col;
     }
 
-    // pub fn prompt(&self) -> &str {
-    //     &self.prompt
-    // }
-
     fn move_left(&mut self) {
-        self.caret_position.col = max(self.caret_position.col.saturating_sub(1), self.prompt.grapheme_count());
+        self.caret_position.col = max(
+            self.caret_position.col.saturating_sub(1),
+            self.prompt.grapheme_count(),
+        );
     }
 
     fn move_right(&mut self) {
-        self.caret_position.col = min(self.caret_position.col.saturating_add(1), self.value.grapheme_count() + self.prompt.grapheme_count());
+        self.caret_position.col = min(
+            self.caret_position.col.saturating_add(1),
+            self.value.grapheme_count() + self.prompt.grapheme_count(),
+        );
     }
 
     fn move_to_start_of_line(&mut self) {
@@ -87,7 +89,8 @@ impl CommandBar {
     }
 
     fn insert_char(&mut self, character: char, col: usize) {
-        self.value.insert_char(character, col - self.prompt.grapheme_count());
+        self.value
+            .insert_char(character, col - self.prompt.grapheme_count());
         self.caret_position.col = col + 1;
     }
 
@@ -100,7 +103,8 @@ impl CommandBar {
             return;
         }
 
-        self.value.delete_char(col - self.prompt.grapheme_count() - 1);
+        self.value
+            .delete_char(col - self.prompt.grapheme_count() - 1);
         self.caret_position.col = col - 1;
     }
 }
@@ -120,8 +124,6 @@ impl UIComponent for CommandBar {
 
     fn draw(&mut self, origin: usize) -> Result<(), Error> {
         let area_for_value = self.size.width.saturating_sub(self.prompt.grapheme_count());
-
-        // self.caret_position = Position {row: origin, col: self.caret_position_col()};
 
         let value_end = self.value.width();
 

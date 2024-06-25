@@ -3,7 +3,6 @@ use super::super::{
     DocumentStatus, Line, Position, Size, Terminal, NAME, VERSION,
 };
 use super::UIComponent;
-// use std::{thread, time::Duration};
 use buffer::Buffer;
 use fileinfo::FileInfo;
 use searchinfo::SearchInfo;
@@ -12,10 +11,6 @@ use std::{cmp::min, io::Error};
 mod buffer;
 mod fileinfo;
 mod searchinfo;
-
-// struct SearchInfo {
-//     prev_location: Location,
-// }
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Location {
@@ -89,8 +84,6 @@ impl View {
                 query: Some(Line::from(query)),
                 result: Some(location),
             });
-
-            
         } else {
             self.search_info = None;
         }
@@ -99,7 +92,6 @@ impl View {
             if let Some(location) = &search_info.result {
                 self.text_location = location[search_info.current_idx.unwrap()];
             }
-            // self.text_location = search_info.result.unwrap();
         }
         self.set_needs_redraw(true);
         self.scroll_text_location_into_view();
@@ -109,17 +101,9 @@ impl View {
         if let Some(search_info) = &mut self.search_info {
             if let Some(location) = &search_info.result {
                 let len: usize = location.len();
-                // let left = self.scroll_offset.col;
-                // let right = self.scroll_offset.col + self.size.col;
-                // if let Some(line) = self.buffer.lines.get(self.text_location.line_index) {
-                    // Terminal::print_annotated_row(self.text_location.line_index, &line.get_annotated_visible_substr(range, query, selected_match, search_results))
-                // }
                 search_info.current_idx = Some((search_info.current_idx.unwrap() + 1) % len);
                 self.text_location = location[search_info.current_idx.unwrap()];
                 self.set_needs_redraw(true);
-                // Terminal::print_annotated_row(self.text_location.line_index, self.buffer.lines)
-                // dbg!(self.text_location);
-                // dbg!(self.text_location.line_index);
             }
         }
     }
@@ -131,8 +115,6 @@ impl View {
                 search_info.current_idx = Some((search_info.current_idx.unwrap() + len - 1) % len);
                 self.text_location = location[search_info.current_idx.unwrap()];
                 self.set_needs_redraw(true);
-                // dbg!(self.text_location);
-                // dbg!(self.text_location.line_index);
             }
         }
     }
@@ -141,7 +123,6 @@ impl View {
 
     pub fn handle_edit_command(&mut self, command: Edit) {
         match command {
-            // Edit::Move(direction) => self.move_text_location(direction),
             Edit::Insert(character) => self.insert_char(character),
             Edit::DeleteBackward => self.delete_char_backward(),
             Edit::Delete => self.delete_char(),
@@ -167,7 +148,6 @@ impl View {
 
     fn delete_char_backward(&mut self) {
         if self.text_location.line_index != 0 || self.text_location.grapheme_index != 0 {
-            // self.move_text_location(Direction::Left);
             self.handle_move_command(Move::Left);
             self.delete_char();
         }
@@ -288,13 +268,20 @@ impl View {
 
     fn move_up(&mut self, step: usize) {
         self.text_location.line_index = self.text_location.line_index.saturating_sub(step);
-        self.text_location.grapheme_index = min(self.buffer.lines[self.text_location.line_index].grapheme_count(), self.prev_text_location.grapheme_index);
+        self.text_location.grapheme_index = min(
+            self.buffer.lines[self.text_location.line_index].grapheme_count(),
+            self.prev_text_location.grapheme_index,
+        );
         self.snap_to_valid_grapheme();
     }
 
     fn move_down(&mut self, step: usize) {
         self.text_location.line_index = self.text_location.line_index.saturating_add(step);
-        self.text_location.grapheme_index = min(self.buffer.lines[min(self.text_location.line_index, self.buffer.lines.len() - 1)].grapheme_count(), self.prev_text_location.grapheme_index);
+        self.text_location.grapheme_index = min(
+            self.buffer.lines[min(self.text_location.line_index, self.buffer.lines.len() - 1)]
+                .grapheme_count(),
+            self.prev_text_location.grapheme_index,
+        );
         self.snap_to_valid_grapheme();
         self.snap_to_valid_line();
     }
@@ -405,28 +392,36 @@ impl UIComponent for View {
                 let left = self.scroll_offset.col;
                 let right = self.scroll_offset.col.saturating_add(width);
 
-                let query: Option<&str> = self.search_info.as_ref().and_then(|search_info| search_info.query.as_deref());
+                let query: Option<&str> = self
+                    .search_info
+                    .as_ref()
+                    .and_then(|search_info| search_info.query.as_deref());
 
-                let selected_match = (self.text_location.line_index == line_idx && query.is_some()).then_some(self.text_location.grapheme_index);
-                // let search_result = None;
+                let selected_match = (self.text_location.line_index == line_idx && query.is_some())
+                    .then_some(self.text_location.grapheme_index);
                 let search_results = if let Some(search_info) = &self.search_info {
                     if let Some(locations) = &search_info.result {
-                        let res = locations.iter().filter(|location| {
-                            location.line_index == line_idx
-                        }).map(|location| location.grapheme_index).collect::<Vec<_>>();
+                        let res = locations
+                            .iter()
+                            .filter(|location| location.line_index == line_idx)
+                            .map(|location| location.grapheme_index)
+                            .collect::<Vec<_>>();
                         Some(res)
-                        // Some(locations.iter().filter(|location| {
-                        //     location.line_index == line_idx
-                        // }).map(|location| location.grapheme_index).collect::<Vec<_>>())
                     } else {
                         None
                     }
                 } else {
                     None
                 };
-                // dbg!(line_idx);
-                Terminal::print_annotated_row(current_row, &line.get_annotated_visible_substr(left..right, query, selected_match, search_results.clone()))?;
-                // Self::render_line(current_row, &line.get_visible_graphemes(left..right))?;
+                Terminal::print_annotated_row(
+                    current_row,
+                    &line.get_annotated_visible_substr(
+                        left..right,
+                        query,
+                        selected_match,
+                        search_results.clone(),
+                    ),
+                )?;
             } else if current_row == top_third && self.buffer.is_empty() {
                 Self::render_line(current_row, &Self::build_welcome_message(width))?;
             } else {

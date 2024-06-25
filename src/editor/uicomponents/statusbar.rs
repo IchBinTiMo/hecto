@@ -1,4 +1,4 @@
-use super::super::{DocumentStatus, Size, Terminal, };
+use super::super::{DocumentStatus, Size, Terminal};
 use super::UIComponent;
 use std::io::Error;
 

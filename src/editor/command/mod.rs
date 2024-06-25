@@ -1,7 +1,7 @@
 use super::Size;
 
-use std::convert::TryFrom;
 use crossterm::event::Event;
+use std::convert::TryFrom;
 
 pub use edit::Edit;
 pub use movecommand::Move;

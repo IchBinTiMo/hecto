@@ -4,7 +4,7 @@ use super::{AnnotatedString, AnnotatedStringPart};
 
 pub struct AnnotatedStringIterator<'a> {
     pub annotated_string: &'a AnnotatedString,
-    pub current_idx: usize
+    pub current_idx: usize,
 }
 
 impl<'a> Iterator for AnnotatedStringIterator<'a> {
@@ -15,9 +15,16 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
             return None;
         }
 
-        if let Some(annotation) = self.annotated_string.annotations.iter().filter(|annotation| {
-            annotation.start_byte_idx <= self.current_idx && annotation.end_byte_idx > self.current_idx
-        }).last() {
+        if let Some(annotation) = self
+            .annotated_string
+            .annotations
+            .iter()
+            .filter(|annotation| {
+                annotation.start_byte_idx <= self.current_idx
+                    && annotation.end_byte_idx > self.current_idx
+            })
+            .last()
+        {
             let end_idx = min(annotation.end_byte_idx, self.annotated_string.string.len());
             let start_idx = self.current_idx;
 
@@ -44,7 +51,5 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
             string: &self.annotated_string.string[start_idx..end_idx],
             annotation_type: None,
         })
-
-
     }
 }

@@ -1,4 +1,4 @@
-use super::super::{Size, Terminal,};
+use super::super::{Size, Terminal};
 use super::UIComponent;
 use std::io::Error;
 

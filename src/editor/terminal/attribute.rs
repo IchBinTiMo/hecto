@@ -17,24 +17,19 @@ impl From<AnnotationType> for Attribute {
                     b: 255,
                 }),
                 background: Some(Color::Rgb {
-                  r: 100,
-                  g: 100,
-                  b: 100,
-                })
+                    r: 100,
+                    g: 100,
+                    b: 100,
+                }),
             },
             AnnotationType::SelectedMatch => Self {
-                foreground: Some(Color::Rgb {
-                    r: 0,
-                    g: 0,
+                foreground: Some(Color::Rgb { r: 0, g: 0, b: 0 }),
+                background: Some(Color::Rgb {
+                    r: 255,
+                    g: 255,
                     b: 0,
                 }),
-                background: Some(Color::Rgb {
-                  r: 255,
-                  g: 255,
-                  b: 0,
-                })
             },
-
         }
     }
 }

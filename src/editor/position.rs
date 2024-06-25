@@ -1,4 +1,3 @@
-// pub type Row = usize;
 pub type Col = usize;
 
 #[derive(Copy, Clone, Default)]

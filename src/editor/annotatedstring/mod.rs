@@ -1,16 +1,16 @@
+use annotatedstringiterator::AnnotatedStringIterator;
+use annotatedstringpart::AnnotatedStringPart;
+use annotation::Annotation;
+pub use annotationtype::AnnotationType;
 use std::{
     cmp::{max, min},
     fmt::{self, Display},
 };
-pub use annotationtype::AnnotationType;
-use annotation::Annotation;
-use annotatedstringpart::AnnotatedStringPart;
-use annotatedstringiterator::AnnotatedStringIterator;
 
-pub mod annotationtype;
-mod annotation;
-mod annotatedstringpart;
 mod annotatedstringiterator;
+mod annotatedstringpart;
+mod annotation;
+pub mod annotationtype;
 
 #[derive(Default, Debug)]
 pub struct AnnotatedString {
@@ -26,8 +26,12 @@ impl AnnotatedString {
         }
     }
 
-    pub fn add_annotation(&mut self, annotation_type: AnnotationType, start_byte_idx: usize, end_byte_idx: usize) {
-
+    pub fn add_annotation(
+        &mut self,
+        annotation_type: AnnotationType,
+        start_byte_idx: usize,
+        end_byte_idx: usize,
+    ) {
         self.annotations.push(Annotation {
             annotation_type,
             start_byte_idx,
@@ -37,7 +41,8 @@ impl AnnotatedString {
 
     pub fn replace(&mut self, start_byte_idx: usize, end_byte_idx: usize, new_string: &str) {
         let end_byte_idx = min(end_byte_idx, self.string.len());
-        self.string.replace_range(start_byte_idx..end_byte_idx, new_string);
+        self.string
+            .replace_range(start_byte_idx..end_byte_idx, new_string);
 
         let replace_range_len = end_byte_idx.saturating_sub(start_byte_idx);
         let shortened = new_string.len() < replace_range_len;
@@ -56,9 +61,15 @@ impl AnnotatedString {
                 }
             } else if annotation.start_byte_idx >= start_byte_idx {
                 if shortened {
-                    max(start_byte_idx, annotation.start_byte_idx.saturating_sub(len_diff))
+                    max(
+                        start_byte_idx,
+                        annotation.start_byte_idx.saturating_sub(len_diff),
+                    )
                 } else {
-                    min(end_byte_idx, annotation.start_byte_idx.saturating_add(len_diff))
+                    min(
+                        end_byte_idx,
+                        annotation.start_byte_idx.saturating_add(len_diff),
+                    )
                 }
             } else {
                 annotation.start_byte_idx
@@ -72,9 +83,15 @@ impl AnnotatedString {
                 }
             } else if annotation.end_byte_idx >= start_byte_idx {
                 if shortened {
-                    max(start_byte_idx, annotation.end_byte_idx.saturating_sub(len_diff))
+                    max(
+                        start_byte_idx,
+                        annotation.end_byte_idx.saturating_sub(len_diff),
+                    )
                 } else {
-                    min(end_byte_idx, annotation.end_byte_idx.saturating_add(len_diff))
+                    min(
+                        end_byte_idx,
+                        annotation.end_byte_idx.saturating_add(len_diff),
+                    )
                 }
             } else {
                 annotation.end_byte_idx
@@ -82,7 +99,8 @@ impl AnnotatedString {
         });
 
         self.annotations.retain(|annotation| {
-            annotation.start_byte_idx < annotation.end_byte_idx && annotation.start_byte_idx < self.string.len()
+            annotation.start_byte_idx < annotation.end_byte_idx
+                && annotation.start_byte_idx < self.string.len()
         });
     }
 }

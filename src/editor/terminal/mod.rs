@@ -1,8 +1,8 @@
 use super::AnnotatedString;
 use super::{Position, Size};
-use std::io::{stdout, Error, Write};
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
+    queue,
     style::{
         Attribute::{Reset, Reverse},
         Print, ResetColor, SetBackgroundColor, SetForegroundColor,
@@ -11,9 +11,9 @@ use crossterm::{
         disable_raw_mode, enable_raw_mode, size, Clear, ClearType, DisableLineWrap, EnableLineWrap,
         EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
     },
-    queue,
     Command,
 };
+use std::io::{stdout, Error, Write};
 
 use attribute::Attribute;
 
@@ -135,22 +135,26 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn print_annotated_row(row: usize, annotated_string: &AnnotatedString) -> Result<(), Error> {
+    pub fn print_annotated_row(
+        row: usize,
+        annotated_string: &AnnotatedString,
+    ) -> Result<(), Error> {
         Self::move_caret_to(Position { row, col: 0 })?;
         Self::clear_line()?;
 
-        annotated_string.into_iter().try_for_each(|part| -> Result<(), Error> {
-            if let Some(annotation_type) = part.annotation_type {
-                let attribute = annotation_type.into();
-                Self::set_attribute(&attribute)?;
-            }
+        annotated_string
+            .into_iter()
+            .try_for_each(|part| -> Result<(), Error> {
+                if let Some(annotation_type) = part.annotation_type {
+                    let attribute = annotation_type.into();
+                    Self::set_attribute(&attribute)?;
+                }
 
-            Self::print(part.string)?;
-            Self::reset_color()?;
-            Ok(())
-        })?;
+                Self::print(part.string)?;
+                Self::reset_color()?;
+                Ok(())
+            })?;
         Ok(())
-
     }
 
     fn set_attribute(attribute: &Attribute) -> Result<(), Error> {
@@ -174,12 +178,7 @@ impl Terminal {
         let width = Self::size()?.width;
         Self::print_row(
             row,
-            &format!(
-                "{}{:width$.width$}{}",
-                Reverse,
-                line_text,
-                Reset
-            ),
+            &format!("{}{:width$.width$}{}", Reverse, line_text, Reset),
         )
     }
 }
