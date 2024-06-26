@@ -73,6 +73,8 @@ impl View {
 
     pub fn search(&mut self, query: &str) {
         if query.is_empty() {
+            self.search_info = None;
+            self.set_needs_redraw(true);
             return;
         }
 
