@@ -101,8 +101,16 @@ impl Line {
         if range.start >= range.end {
             return AnnotatedString::default();
         }
-
+        // Create a new annotated string
         let mut result = AnnotatedString::from(&self.string);
+
+        // Highlight Digits
+        self.string.chars().enumerate().for_each(|(idx, ch)| {
+            if ch.is_ascii_digit() {
+                result.add_annotation(AnnotationType::Digit, idx, idx.saturating_add(1));
+            }
+        });
+
 
         if let Some(query) = query {
             if !query.is_empty() {
