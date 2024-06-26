@@ -1,4 +1,4 @@
-use super::super::Size;
+use crate::prelude::*;
 use std::io::Error;
 
 pub trait UIComponent {
@@ -19,7 +19,7 @@ pub trait UIComponent {
     fn set_size(&mut self, size: Size);
 
     // Draw the component if it's visible and in need of redrawing
-    fn render(&mut self, origin_row: usize) {
+    fn render(&mut self, origin_row: RowIdx) {
         if self.needs_redraw() {
             match self.draw(origin_row) {
                 Ok(()) => self.set_needs_redraw(false),
@@ -33,5 +33,5 @@ pub trait UIComponent {
         }
     }
 
-    fn draw(&mut self, origin_row: usize) -> Result<(), Error>;
+    fn draw(&mut self, origin_row: RowIdx) -> Result<(), Error>;
 }

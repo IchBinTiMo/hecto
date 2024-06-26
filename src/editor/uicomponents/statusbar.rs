@@ -1,5 +1,6 @@
-use super::super::{DocumentStatus, Size, Terminal};
+use super::super::{DocumentStatus, Terminal};
 use super::UIComponent;
+use crate::prelude::*;
 use std::io::Error;
 
 #[derive(Default)]
@@ -31,7 +32,7 @@ impl UIComponent for StatusBar {
         self.size = size;
     }
 
-    fn draw(&mut self, origin_row: usize) -> Result<(), Error> {
+    fn draw(&mut self, origin_row: RowIdx) -> Result<(), Error> {
         let line_count: String = self.current_status.line_count_to_string();
         let modified_indicator: String = self.current_status.modified_indicator_to_string();
 

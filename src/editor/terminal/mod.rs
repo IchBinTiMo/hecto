@@ -1,5 +1,5 @@
 use super::AnnotatedString;
-use super::{Position, Size};
+use crate::prelude::*;
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
     queue,
@@ -128,7 +128,7 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn print_row(row: usize, line_text: &str) -> Result<(), Error> {
+    pub fn print_row(row: RowIdx, line_text: &str) -> Result<(), Error> {
         Self::move_caret_to(Position { row, col: 0 })?;
         Self::clear_line()?;
         Self::print(line_text)?;
@@ -136,7 +136,7 @@ impl Terminal {
     }
 
     pub fn print_annotated_row(
-        row: usize,
+        row: RowIdx,
         annotated_string: &AnnotatedString,
     ) -> Result<(), Error> {
         Self::move_caret_to(Position { row, col: 0 })?;
@@ -174,7 +174,7 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn print_inverted_row(row: usize, line_text: &str) -> Result<(), Error> {
+    pub fn print_inverted_row(row: RowIdx, line_text: &str) -> Result<(), Error> {
         let width = Self::size()?.width;
         Self::print_row(
             row,

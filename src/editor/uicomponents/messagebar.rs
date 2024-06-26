@@ -1,5 +1,6 @@
-use super::super::{Size, Terminal};
+use super::super::Terminal;
 use super::UIComponent;
+use crate::prelude::*;
 use std::io::Error;
 
 #[derive(Default)]

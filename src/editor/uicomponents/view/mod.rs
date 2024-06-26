@@ -1,8 +1,10 @@
 use super::super::{
     command::{Edit, Move},
-    DocumentStatus, Line, Position, Size, Terminal, NAME, VERSION,
+    DocumentStatus, Line, Terminal,
 };
 use super::UIComponent;
+use crate::editor::RowIdx;
+use crate::prelude::*;
 use buffer::Buffer;
 use fileinfo::FileInfo;
 use searchinfo::SearchInfo;
@@ -12,11 +14,11 @@ mod buffer;
 mod fileinfo;
 mod searchinfo;
 
-#[derive(Clone, Copy, Default, Debug)]
-pub struct Location {
-    pub grapheme_index: usize,
-    pub line_index: usize,
-}
+// #[derive(Clone, Copy, Default, Debug)]
+// pub struct Location {
+//     pub grapheme_index: usize,
+//     pub line_index: usize,
+// }
 
 #[derive(Default)]
 pub struct View {
@@ -66,9 +68,10 @@ impl View {
             self.text_location = search_info.prev_location;
         }
 
-        self.search_info = None;
-        self.set_needs_redraw(true);
-        self.scroll_text_location_into_view();
+        self.exit_search();
+        // self.search_info = None;
+        // self.set_needs_redraw(true);
+        // self.scroll_text_location_into_view();
     }
 
     pub fn search(&mut self, query: &str) {
@@ -190,7 +193,7 @@ impl View {
         self.set_needs_redraw(true);
     }
 
-    fn render_line(at: usize, lines: &str) -> Result<(), Error> {
+    fn render_line(at: RowIdx, lines: &str) -> Result<(), Error> {
         Terminal::print_row(at, lines)
     }
 
@@ -211,7 +214,7 @@ impl View {
         format!("{:<1}{:^remaining_width$}", "~", welcome_message)
     }
 
-    fn scroll_vertically(&mut self, to: usize) {
+    fn scroll_vertically(&mut self, to: RowIdx) {
         let Size { height, .. } = self.size;
         let offset_changed = if to < self.scroll_offset.row {
             self.scroll_offset.row = to;
@@ -230,7 +233,7 @@ impl View {
         self.needs_redraw = offset_changed || self.needs_redraw;
     }
 
-    fn scroll_horizontally(&mut self, to: usize) {
+    fn scroll_horizontally(&mut self, to: ColIdx) {
         let Size { width, .. } = self.size;
         let offset_changed = if to < self.scroll_offset.col {
             self.scroll_offset.col = to;
@@ -377,7 +380,7 @@ impl UIComponent for View {
         self.scroll_text_location_into_view();
     }
 
-    fn draw(&mut self, origin_row: usize) -> Result<(), Error> {
+    fn draw(&mut self, origin_row: RowIdx) -> Result<(), Error> {
         let Size { width, height } = self.size;
         // assert_eq!(self.scroll_offset.row, 0);
         let end_y = origin_row.saturating_add(height);

@@ -1,21 +1,23 @@
 use std::{
+    // cmp::min,
     fmt::{self, Display},
     ops::{Deref, Range},
 };
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-
 use graphemewidth::GraphemeWidth;
 use textfragment::TextFragment;
+use super::{AnnotatedString, AnnotationType};
+use crate::prelude::*;
 
-use super::{AnnotatedString, AnnotationType, Col};
+
 
 mod graphemewidth;
 mod textfragment;
 
-type GraphemeIdx = usize;
-type ByteIdx = usize;
-type ColIdx = usize;
+// type GraphemeIdx = usize;
+// type ByteIdx = usize;
+// type ColIdx = usize;
 
 #[derive(Default, Clone)]
 pub struct Line {
@@ -54,7 +56,7 @@ impl Line {
                     grapheme: grapheme.to_string(),
                     rendered_width,
                     replacement,
-                    start_byte_idx: byte_idx,
+                    start: byte_idx,
                 }
             })
             .collect()
@@ -151,22 +153,24 @@ impl Line {
                 // the fragment is cut into two parts,
                 // the left part is visible,
                 // and the right part is not visible
-                result.replace(fragment.start_byte_idx, self.string.len(), "...");
+                result.replace(fragment.start, self.string.len(), "...");
                 continue;
             } else if fragment_start == range.end {
-                result.replace(fragment.start_byte_idx, self.string.len(), "");
+                // result.replace(fragment.start, self.string.len(), "");
+                result.truncate_right_from(fragment.start);
                 continue;
             }
 
             if fragment_end <= range.start {
                 // the fragment ends at the start of the range
-                result.replace(
-                    0,
-                    fragment
-                        .start_byte_idx
-                        .saturating_add(fragment.grapheme.len()),
-                    "",
-                );
+                result.truncate_left_until(fragment.start.saturating_add(fragment.grapheme.len()));
+                // result.replace(
+                //     0,
+                //     fragment
+                //         .start
+                //         .saturating_add(fragment.grapheme.len()),
+                //     "",
+                // );
                 break; // break out of the loop since all fragments remained are not visible
             } else if fragment_start < range.start && fragment_end > range.start {
                 // the fragment is cut into two parts,
@@ -174,9 +178,10 @@ impl Line {
                 // and the left part is not visible
                 result.replace(
                     0,
-                    fragment
-                        .start_byte_idx
-                        .saturating_add(fragment.grapheme.len()),
+                    fragment.start.saturating_add(fragment.grapheme.len()),
+                    // fragment
+                    //     .start
+                    //     .saturating_add(fragment.grapheme.len()),
                     "...",
                 );
                 break; // break out of the loop since all fragments remained are not visible
@@ -185,10 +190,10 @@ impl Line {
             if fragment_start >= range.start && fragment_end <= range.end {
                 // the fragment is completely visible
                 if let Some(replcement) = fragment.replacement {
-                    let start_byte_idx = fragment.start_byte_idx;
-                    let end_byte_idx = start_byte_idx.saturating_add(fragment.grapheme.len());
+                    let start = fragment.start;
+                    let end = start.saturating_add(fragment.grapheme.len());
 
-                    result.replace(start_byte_idx, end_byte_idx, &replcement.to_string());
+                    result.replace(start, end, &replcement.to_string());
                 }
             }
         }
@@ -200,7 +205,7 @@ impl Line {
         self.fragments.len()
     }
 
-    pub fn width_until(&self, grapheme_index: usize) -> Col {
+    pub fn width_until(&self, grapheme_index: usize) -> ColIdx {
         self.fragments
             .iter()
             .take(grapheme_index)
@@ -211,13 +216,13 @@ impl Line {
             .sum()
     }
 
-    pub fn width(&self) -> Col {
+    pub fn width(&self) -> ColIdx {
         self.width_until(self.grapheme_count())
     }
 
     pub fn insert_char(&mut self, character: char, at: usize) {
         if let Some(fragment) = self.fragments.get_mut(at) {
-            self.string.insert(fragment.start_byte_idx, character);
+            self.string.insert(fragment.start, character);
         } else {
             self.string.push(character);
         }
@@ -227,9 +232,9 @@ impl Line {
 
     pub fn delete_char(&mut self, at: usize) {
         if let Some(fragment) = self.fragments.get(at) {
-            let start = fragment.start_byte_idx;
+            let start = fragment.start;
             let end = fragment
-                .start_byte_idx
+                .start
                 .saturating_add(fragment.grapheme.len());
             self.string.drain(start..end);
             self.rebuild_fragments();
@@ -245,7 +250,7 @@ impl Line {
 
     pub fn split(&mut self, at: usize) -> Self {
         if let Some(fragment) = self.fragments.get(at) {
-            let remainder = self.string.split_off(fragment.start_byte_idx);
+            let remainder = self.string.split_off(fragment.start);
 
             self.rebuild_fragments();
 
@@ -262,7 +267,7 @@ impl Line {
 
         self.fragments
             .iter()
-            .position(|fragment| fragment.start_byte_idx >= byte_idx)
+            .position(|fragment| fragment.start >= byte_idx)
     }
 
     fn grapheme_idx_to_byte_idx(&self, grapheme_idx: GraphemeIdx) -> ByteIdx {
@@ -282,7 +287,7 @@ impl Line {
                     0
                 }
             },
-            |fragment| fragment.start_byte_idx,
+            |fragment| fragment.start,
         )
     }
 
@@ -290,6 +295,8 @@ impl Line {
         let result: Vec<GraphemeIdx> = self
             .string
             .match_indices(query)
+            // .map(|byte_idx, _ | self.match_grapheme_clusters(&matches, query))
+            // .map(|_, grapheme_idx| grapheme_idx)
             .map(|(byte_idx, _)| self.byte_idx_to_grapheme_idx(byte_idx))
             .map(|x| x.unwrap())
             .collect();
@@ -300,6 +307,20 @@ impl Line {
             Some(result)
         }
     }
+
+    // fn match_grapheme_clusters(&self, matches: &[ByteIdx], query: &str) -> Vec<(ByteIdx, GraphemeIdx)> {
+    //     let grapheme_count = query.graphemes(true).count();
+
+    //     matches.iter().filter_map(|&start| {
+    //         self.byte_idx_to_grapheme_idx(start).and_then(|grapheme_idx| {
+    //             self.fragments.get(grapheme_idx..grapheme_idx.saturating_add(grapheme_count)).and_then(|fragments| {
+    //                 let substring = fragments.iter().map(|fragment| fragment.grapheme.as_str()).collect::<String>();
+
+    //                 (substring == query).then_some((start, grapheme_idx))
+    //             })
+    //         })
+    //     }).collect()
+    // }
 }
 
 impl Display for Line {

@@ -1,4 +1,5 @@
-use super::{FileInfo, Line, Location};
+use super::{FileInfo, Line};
+use crate::prelude::*;
 use std::{
     fs::{read_to_string, File},
     io::{Error, Write},

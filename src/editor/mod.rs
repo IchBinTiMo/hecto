@@ -1,35 +1,35 @@
-use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
-use std::{
-    env,
-    io::Error,
-    panic::{set_hook, take_hook},
-};
-
-mod annotatedstring;
-mod command;
-mod documentstatus;
-mod line;
-mod position;
-mod size;
-mod terminal;
-mod uicomponents;
-
 use self::command::{
     Command::{self, Edit, Move, System},
     Edit::InsertNewline,
     Move::{Down, Up},
     System::{Dismiss, Quit, Resize, Save, Search},
 };
+use crate::prelude::*;
 use annotatedstring::{AnnotatedString, AnnotationType};
+use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
 use documentstatus::DocumentStatus;
 use line::Line;
-use position::{Col, Position};
-use size::Size;
+// use position::{Col, Position};
+// use size::Size;
+use std::{
+    env,
+    io::Error,
+    panic::{set_hook, take_hook},
+};
 use terminal::Terminal;
 use uicomponents::{CommandBar, MessageBar, StatusBar, UIComponent, View};
 
-const NAME: &str = env!("CARGO_PKG_NAME");
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+mod annotatedstring;
+mod command;
+mod documentstatus;
+mod line;
+// mod position;
+// mod size;
+mod terminal;
+mod uicomponents;
+
+// const NAME: &str = env!("CARGO_PKG_NAME");
+// const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const QUIT_TIMES: u8 = 3;
 

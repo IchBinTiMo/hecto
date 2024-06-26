@@ -1,6 +1,7 @@
-mod editor;
-
 use editor::Editor;
+
+mod editor;
+mod prelude;
 
 #[warn(
     clippy::all,
