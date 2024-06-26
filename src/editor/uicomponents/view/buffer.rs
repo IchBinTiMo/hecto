@@ -1,18 +1,63 @@
-use super::{FileInfo, Line};
+use super::super::super::AnnotatedString;
+use super::{FileInfo, Highlighter, Line};
 use crate::prelude::*;
 use std::{
     fs::{read_to_string, File},
     io::{Error, Write},
+    ops::Range,
 };
-
 #[derive(Default)]
 pub struct Buffer {
-    pub lines: Vec<Line>, // vector of lines in the buffer, including the whole document
-    pub file_info: FileInfo, // file info of the document in the current buffer
-    pub dirty: bool, // to indicate whether the buffer is modified or not, default is false, set to true when buffer is modified
+    lines: Vec<Line>,    // vector of lines in the buffer, including the whole document
+    file_info: FileInfo, // file info of the document in the current buffer
+    dirty: bool, // to indicate whether the buffer is modified or not, default is false, set to true when buffer is modified
 }
 
 impl Buffer {
+    pub const fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub const fn get_file_info(&self) -> &FileInfo {
+        &self.file_info
+    }
+
+    pub fn len(&self) -> usize {
+        self.lines.len()
+    }
+
+    pub fn grapheme_count(&self, idx: LineIdx) -> GraphemeIdx {
+        self.lines.get(idx).map_or(0, Line::grapheme_count)
+    }
+
+    pub fn width_until(&self, idx: LineIdx, until: GraphemeIdx) -> GraphemeIdx {
+        self.lines
+            .get(idx)
+            .map_or(0, |line| line.width_until(until))
+    }
+
+    pub fn get_highlighted_substring(
+        &self,
+        line_idx: LineIdx,
+        range: Range<GraphemeIdx>,
+        // search_results: &Option<Vec<GraphemeIdx>>,
+        highlighter: &Highlighter,
+    ) -> Option<AnnotatedString> {
+        self.lines.get(line_idx).map(|line| {
+            line.get_annotated_visible_substr(
+                range,
+                highlighter.get_annotation(line_idx),
+                // search_results,
+            )
+        })
+    }
+
+    pub fn highlight(&self, idx: LineIdx, search_results: &Option<Vec<GraphemeIdx>>, highlighter: &mut Highlighter) {
+        if let Some(line) = self.lines.get(idx) {
+            highlighter.highlight(idx, line, search_results);
+        }
+    }
+
     pub fn load_file(file_name: &str) -> Result<Self, Error> {
         let contents = read_to_string(file_name)?;
         let mut lines = Vec::new();

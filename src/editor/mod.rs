@@ -5,7 +5,9 @@ use self::command::{
     System::{Dismiss, Quit, Resize, Save, Search},
 };
 use crate::prelude::*;
-use annotatedstring::{AnnotatedString, AnnotationType};
+use annotatedstring::AnnotatedString;
+pub use annotationtype::AnnotationType;
+use annotation::Annotation;
 use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
 use documentstatus::DocumentStatus;
 use line::Line;
@@ -27,6 +29,8 @@ mod line;
 // mod size;
 mod terminal;
 mod uicomponents;
+pub mod annotationtype;
+mod annotation;
 
 // const NAME: &str = env!("CARGO_PKG_NAME");
 // const VERSION: &str = env!("CARGO_PKG_VERSION");

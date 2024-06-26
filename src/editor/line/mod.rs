@@ -7,7 +7,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 use graphemewidth::GraphemeWidth;
 use textfragment::TextFragment;
-use super::{AnnotatedString, AnnotationType};
+use super::{AnnotatedString, Annotation};
 use crate::prelude::*;
 
 
@@ -87,16 +87,133 @@ impl Line {
     }
 
     pub fn get_visible_graphemes(&self, range: Range<usize>) -> String {
-        self.get_annotated_visible_substr(range, None, None, &None)
+        self.get_annotated_visible_substr(range, None)
             .to_string()
     }
+
+    // pub fn get_annotated_visible_substr(
+    //     &self,
+    //     range: Range<ColIdx>,
+    //     query: Option<&str>,
+    //     selected_match: Option<GraphemeIdx>,
+    //     search_results: &Option<Vec<GraphemeIdx>>,
+    // ) -> AnnotatedString {
+    //     if range.start >= range.end {
+    //         return AnnotatedString::default();
+    //     }
+    //     // Create a new annotated string
+    //     let mut result = AnnotatedString::from(&self.string);
+
+    //     // Highlight Digits
+    //     self.string.chars().enumerate().for_each(|(idx, ch)| {
+    //         if ch.is_ascii_digit() {
+    //             result.add_annotation(AnnotationType::Digit, idx, idx.saturating_add(1));
+    //         }
+    //     });
+
+
+    //     if let Some(query) = query {
+    //         if !query.is_empty() {
+    //             if let Some(search_results) = search_results {
+    //                 for grapheme_idx in search_results {
+    //                     let start_byte_idx = self.grapheme_idx_to_byte_idx(*grapheme_idx);
+    //                     let end_byte_idx = start_byte_idx.saturating_add(query.len());
+    //                     if let Some(seleted_match) = selected_match {
+    //                         if *grapheme_idx == seleted_match {
+    //                             result.add_annotation(
+    //                                 AnnotationType::SelectedMatch,
+    //                                 start_byte_idx,
+    //                                 end_byte_idx,
+    //                             );
+    //                         } else {
+    //                             result.add_annotation(
+    //                                 AnnotationType::Match,
+    //                                 start_byte_idx,
+    //                                 end_byte_idx,
+    //                             );
+    //                         }
+    //                     } else {
+    //                         result.add_annotation(
+    //                             AnnotationType::Match,
+    //                             start_byte_idx,
+    //                             end_byte_idx,
+    //                         );
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     // Insert replacement characters and truncate if needed
+    //     // and we iterate fragments from rightmost column first
+    //     let mut fragment_start = self.width();
+
+    //     for fragment in self.fragments.iter().rev() {
+    //         let fragment_end = fragment_start;
+
+    //         fragment_start = fragment_start.saturating_sub(fragment.rendered_width.into());
+
+    //         if fragment_start > range.end {
+    //             continue; // This fragment is not visible
+    //         }
+
+    //         if fragment_start < range.end && fragment_end > range.end {
+    //             // the fragment is cut into two parts,
+    //             // the left part is visible,
+    //             // and the right part is not visible
+    //             result.replace(fragment.start, self.string.len(), "...");
+    //             continue;
+    //         } else if fragment_start == range.end {
+    //             // result.replace(fragment.start, self.string.len(), "");
+    //             result.truncate_right_from(fragment.start);
+    //             continue;
+    //         }
+
+    //         if fragment_end <= range.start {
+    //             // the fragment ends at the start of the range
+    //             result.truncate_left_until(fragment.start.saturating_add(fragment.grapheme.len()));
+    //             // result.replace(
+    //             //     0,
+    //             //     fragment
+    //             //         .start
+    //             //         .saturating_add(fragment.grapheme.len()),
+    //             //     "",
+    //             // );
+    //             break; // break out of the loop since all fragments remained are not visible
+    //         } else if fragment_start < range.start && fragment_end > range.start {
+    //             // the fragment is cut into two parts,
+    //             // the right part is visible,
+    //             // and the left part is not visible
+    //             result.replace(
+    //                 0,
+    //                 fragment.start.saturating_add(fragment.grapheme.len()),
+    //                 // fragment
+    //                 //     .start
+    //                 //     .saturating_add(fragment.grapheme.len()),
+    //                 "...",
+    //             );
+    //             break; // break out of the loop since all fragments remained are not visible
+    //         }
+
+    //         if fragment_start >= range.start && fragment_end <= range.end {
+    //             // the fragment is completely visible
+    //             if let Some(replcement) = fragment.replacement {
+    //                 let start = fragment.start;
+    //                 let end = start.saturating_add(fragment.grapheme.len());
+
+    //                 result.replace(start, end, &replcement.to_string());
+    //             }
+    //         }
+    //     }
+
+    //     result
+    // }
 
     pub fn get_annotated_visible_substr(
         &self,
         range: Range<ColIdx>,
-        query: Option<&str>,
-        selected_match: Option<GraphemeIdx>,
-        search_results: &Option<Vec<GraphemeIdx>>,
+        annotations: Option<&Vec<Annotation>>,
+        // search_results: &Option<Vec<GraphemeIdx>>,
     ) -> AnnotatedString {
         if range.start >= range.end {
             return AnnotatedString::default();
@@ -104,45 +221,51 @@ impl Line {
         // Create a new annotated string
         let mut result = AnnotatedString::from(&self.string);
 
-        // Highlight Digits
-        self.string.chars().enumerate().for_each(|(idx, ch)| {
-            if ch.is_ascii_digit() {
-                result.add_annotation(AnnotationType::Digit, idx, idx.saturating_add(1));
-            }
-        });
-
-
-        if let Some(query) = query {
-            if !query.is_empty() {
-                if let Some(search_results) = search_results {
-                    for grapheme_idx in search_results {
-                        let start_byte_idx = self.grapheme_idx_to_byte_idx(*grapheme_idx);
-                        let end_byte_idx = start_byte_idx.saturating_add(query.len());
-                        if let Some(seleted_match) = selected_match {
-                            if *grapheme_idx == seleted_match {
-                                result.add_annotation(
-                                    AnnotationType::SelectedMatch,
-                                    start_byte_idx,
-                                    end_byte_idx,
-                                );
-                            } else {
-                                result.add_annotation(
-                                    AnnotationType::Match,
-                                    start_byte_idx,
-                                    end_byte_idx,
-                                );
-                            }
-                        } else {
-                            result.add_annotation(
-                                AnnotationType::Match,
-                                start_byte_idx,
-                                end_byte_idx,
-                            );
-                        }
-                    }
-                }
+        if let Some(annotations) = annotations {
+            for annotation in annotations {
+                result.add_annotation(annotation.annotation_type, annotation.start, annotation.end);
             }
         }
+
+        // // Highlight Digits
+        // self.string.chars().enumerate().for_each(|(idx, ch)| {
+        //     if ch.is_ascii_digit() {
+        //         result.add_annotation(AnnotationType::Digit, idx, idx.saturating_add(1));
+        //     }
+        // });
+
+
+        // if let Some(query) = query {
+        //     if !query.is_empty() {
+        //         if let Some(search_results) = search_results {
+        //             for grapheme_idx in search_results {
+        //                 let start_byte_idx = self.grapheme_idx_to_byte_idx(*grapheme_idx);
+        //                 let end_byte_idx = start_byte_idx.saturating_add(query.len());
+        //                 if let Some(seleted_match) = selected_match {
+        //                     if *grapheme_idx == seleted_match {
+        //                         result.add_annotation(
+        //                             AnnotationType::SelectedMatch,
+        //                             start_byte_idx,
+        //                             end_byte_idx,
+        //                         );
+        //                     } else {
+        //                         result.add_annotation(
+        //                             AnnotationType::Match,
+        //                             start_byte_idx,
+        //                             end_byte_idx,
+        //                         );
+        //                     }
+        //                 } else {
+        //                     result.add_annotation(
+        //                         AnnotationType::Match,
+        //                         start_byte_idx,
+        //                         end_byte_idx,
+        //                     );
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         // Insert replacement characters and truncate if needed
         // and we iterate fragments from rightmost column first
@@ -278,32 +401,32 @@ impl Line {
             .position(|fragment| fragment.start >= byte_idx)
     }
 
-    fn grapheme_idx_to_byte_idx(&self, grapheme_idx: GraphemeIdx) -> ByteIdx {
-        if grapheme_idx == 0 || self.grapheme_count() == 0 {
-            return 0;
-        }
+    // fn grapheme_idx_to_byte_idx(&self, grapheme_idx: GraphemeIdx) -> ByteIdx {
+    //     if grapheme_idx == 0 || self.grapheme_count() == 0 {
+    //         return 0;
+    //     }
 
-        self.fragments.get(grapheme_idx).map_or_else(
-            || {
-                #[cfg(debug_assertions)]
-                {
-                    panic!("Grapheme index {:?} out of range", grapheme_idx);
-                }
+    //     self.fragments.get(grapheme_idx).map_or_else(
+    //         || {
+    //             #[cfg(debug_assertions)]
+    //             {
+    //                 panic!("Grapheme index {:?} out of range", grapheme_idx);
+    //             }
 
-                #[cfg(not(debug_assertions))]
-                {
-                    0
-                }
-            },
-            |fragment| fragment.start,
-        )
-    }
+    //             #[cfg(not(debug_assertions))]
+    //             {
+    //                 0
+    //             }
+    //         },
+    //         |fragment| fragment.start,
+    //     )
+    // }
 
-    pub fn search(&self, query: &str) -> Option<Vec<GraphemeIdx>> {
-        let result: Vec<GraphemeIdx> = self
+    pub fn search(&self, query: &str) -> Option<Vec<ByteIdx>> {
+        let result: Vec<ByteIdx> = self
             .string
             .match_indices(query)
-            // .map(|byte_idx, _ | self.match_grapheme_clusters(&matches, query))
+            // .map(|(byte_idx, _ )| byte_idx)
             // .map(|_, grapheme_idx| grapheme_idx)
             .map(|(byte_idx, _)| self.byte_idx_to_grapheme_idx(byte_idx))
             .map(|x| x.unwrap())

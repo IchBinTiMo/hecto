@@ -1,8 +1,9 @@
 use super::ByteIdx;
 use annotatedstringiterator::AnnotatedStringIterator;
 use annotatedstringpart::AnnotatedStringPart;
-use annotation::Annotation;
-pub use annotationtype::AnnotationType;
+// use annotation::Annotation;
+// pub use annotationtype::AnnotationType;
+use super::{Annotation, AnnotationType};
 use std::{
     cmp::{max, min},
     fmt::{self, Display},
@@ -10,8 +11,8 @@ use std::{
 
 mod annotatedstringiterator;
 mod annotatedstringpart;
-mod annotation;
-pub mod annotationtype;
+// mod annotation;
+// pub mod annotationtype;
 
 #[derive(Default, Debug)]
 pub struct AnnotatedString {
