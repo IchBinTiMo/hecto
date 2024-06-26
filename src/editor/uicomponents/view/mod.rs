@@ -419,7 +419,7 @@ impl UIComponent for View {
                         left..right,
                         query,
                         selected_match,
-                        search_results.clone(),
+                        &search_results,
                     ),
                 )?;
             } else if current_row == top_third && self.buffer.is_empty() {

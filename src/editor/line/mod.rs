@@ -85,7 +85,7 @@ impl Line {
     }
 
     pub fn get_visible_graphemes(&self, range: Range<usize>) -> String {
-        self.get_annotated_visible_substr(range, None, None, None)
+        self.get_annotated_visible_substr(range, None, None, &None)
             .to_string()
     }
 
@@ -94,7 +94,7 @@ impl Line {
         range: Range<ColIdx>,
         query: Option<&str>,
         selected_match: Option<GraphemeIdx>,
-        search_results: Option<Vec<GraphemeIdx>>,
+        search_results: &Option<Vec<GraphemeIdx>>,
     ) -> AnnotatedString {
         if range.start >= range.end {
             return AnnotatedString::default();
@@ -104,23 +104,30 @@ impl Line {
 
         if let Some(query) = query {
             if !query.is_empty() {
-                if let Some(seleted_match) = selected_match {
-                    if let Some(search_results) = search_results {
-                        for grapheme_idx in search_results {
-                            let start_byte_idx = self.grapheme_idx_to_byte_idx(grapheme_idx);
-                            if grapheme_idx == seleted_match {
+                if let Some(search_results) = search_results {
+                    for grapheme_idx in search_results {
+                        let start_byte_idx = self.grapheme_idx_to_byte_idx(*grapheme_idx);
+                        let end_byte_idx = start_byte_idx.saturating_add(query.len());
+                        if let Some(seleted_match) = selected_match {
+                            if *grapheme_idx == seleted_match {
                                 result.add_annotation(
                                     AnnotationType::SelectedMatch,
                                     start_byte_idx,
-                                    start_byte_idx.saturating_add(query.len()),
+                                    end_byte_idx,
                                 );
                             } else {
                                 result.add_annotation(
                                     AnnotationType::Match,
                                     start_byte_idx,
-                                    start_byte_idx.saturating_add(query.len()),
+                                    end_byte_idx,
                                 );
                             }
+                        } else {
+                            result.add_annotation(
+                                AnnotationType::Match,
+                                start_byte_idx,
+                                end_byte_idx,
+                            );
                         }
                     }
                 }
