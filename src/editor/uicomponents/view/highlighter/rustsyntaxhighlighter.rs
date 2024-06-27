@@ -1,7 +1,7 @@
 use super::{Annotation, AnnotationType, Line, SyntaxHighlighter};
 use crate::prelude::*;
-use std::collections::HashMap;
 use unicode_segmentation::UnicodeSegmentation;
+// use std::collections::HashMap;
 
 const KEYWORDS: [&str; 50] = [
     "break",
@@ -67,7 +67,9 @@ const KNOWN_VALUES: [&str; 6] = ["Some", "None", "true", "false", "Ok", "Err"];
 
 #[derive(Default)]
 pub struct RustSyntaxHighlighter {
-    highlights: HashMap<LineIdx, Vec<Annotation>>,
+    // highlights: HashMap<LineIdx, Vec<Annotation>>,
+    highlights: Vec<Vec<Annotation>>,
+    ml_comment_balance: usize
 }
 
 fn is_valid_number(word: &str) -> bool {
@@ -242,6 +244,18 @@ fn annotate_lifetime_specifier(string: &str) -> Option<Annotation> {
 
     None
 }
+
+fn annotate_single_line_comment(string: &str) -> Option<Annotation> {
+    if string.starts_with("//") {
+        return Some(Annotation {
+            annotation_type: AnnotationType::Comment,
+            start: 0,
+            end: string.len(),
+        })
+    }
+
+    None
+}
 // #[derive(Default)]
 // pub struct Highlighter<'a> {
 //     matched_word: Option<&'a str>,
@@ -249,7 +263,41 @@ fn annotate_lifetime_specifier(string: &str) -> Option<Annotation> {
 //     highlights: HashMap<LineIdx, Vec<Annotation>>,
 // }
 
-// impl RustSyntaxHighlighter {
+impl RustSyntaxHighlighter {
+    fn annotate_ml_comment(&mut self, string: &str) -> Option<Annotation> {
+        let mut chars = string.char_indices().peekable();
+
+        while let Some((_, ch)) = chars.next() {
+            if ch == '/' {
+                if let Some((_, '*')) = chars.peek() {
+                    self.ml_comment_balance = self.ml_comment_balance.saturating_add(1);
+                    chars.next();
+                }
+            } else if self.ml_comment_balance == 0 {
+                return None;
+            } else if ch == '*' {
+                if let Some((idx, '/')) = chars.peek() {
+                    self.ml_comment_balance = self.ml_comment_balance.saturating_sub(1);
+
+                    if self.ml_comment_balance == 0 {
+                        return Some(Annotation {
+                            annotation_type: AnnotationType::Comment,
+                            start: 0,
+                            end: idx.saturating_add(1),
+                        })
+                    }
+
+                    chars.next();
+                }
+            }
+        }
+
+        (self.ml_comment_balance > 0).then_some(Annotation {
+            annotation_type: AnnotationType::Comment,
+            start: 0,
+            end: string.len(),
+        })
+    }
 //     // pub fn new(matched_word: Option<&'a str>, selected_match: Option<Location>) -> Self {
 //     //     Self {
 //     //         matched_word,
@@ -327,7 +375,7 @@ fn annotate_lifetime_specifier(string: &str) -> Option<Annotation> {
 
 //     //     self.highlights.insert(line_idx, result);
 //     // }
-// }
+}
 
 impl SyntaxHighlighter for RustSyntaxHighlighter {
     fn highlight(
@@ -342,7 +390,9 @@ impl SyntaxHighlighter for RustSyntaxHighlighter {
         while let Some((start_idx, _)) = iterator.next() {
             let remainder = &line[start_idx..];
 
-            if let Some(mut annotation) = annotate_char(remainder)
+            if let Some(mut annotation) = self.annotate_ml_comment(remainder)
+                .or_else(|| annotate_single_line_comment(remainder))
+                .or_else(|| annotate_char(remainder))
                 .or_else(|| annotate_lifetime_specifier(remainder))
                 .or_else(|| annotate_number(remainder))
                 .or_else(|| annotate_keyword(remainder))
@@ -365,6 +415,6 @@ impl SyntaxHighlighter for RustSyntaxHighlighter {
     }
 
     fn get_annotations(&self, idx: LineIdx) -> Option<&Vec<Annotation>> {
-        self.highlights.get(&idx)
+        self.highlights.get(idx)
     }
 }
