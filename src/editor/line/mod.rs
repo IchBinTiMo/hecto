@@ -373,10 +373,8 @@ impl Line {
     }
 
     pub fn append(&mut self, other: &Self) {
-        let mut concat = self.to_string();
-
-        concat.push_str(&other.to_string());
-        self.fragments = Self::str_to_fragments(&concat);
+        self.string.push_str(&other.to_string());
+        self.rebuild_fragments();
     }
 
     pub fn split(&mut self, at: usize) -> Self {

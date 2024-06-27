@@ -9,7 +9,7 @@ use buffer::Buffer;
 use fileinfo::FileInfo;
 use highlighter::Highlighter;
 use searchinfo::SearchInfo;
-use std::{cmp::min, io::Error};
+use std::{cmp::min, io::Error,};
 
 mod buffer;
 mod fileinfo;
@@ -320,16 +320,18 @@ impl View {
             self.move_up(1);
             self.move_to_end_of_line();
         }
-
         self.prev_text_location = self.text_location;
     }
 
     fn move_to_start_of_line(&mut self) {
         self.text_location.grapheme_index = 0;
+        self.prev_text_location.grapheme_index = 0;
     }
 
     fn move_to_end_of_line(&mut self) {
         self.text_location.grapheme_index =
+            self.buffer.grapheme_count(self.text_location.line_index);
+        self.prev_text_location.grapheme_index = 
             self.buffer.grapheme_count(self.text_location.line_index);
     }
 
