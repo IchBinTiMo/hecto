@@ -2,16 +2,25 @@ use std::{
     fmt::{self, Display},
     path::{Path, PathBuf},
 };
-
+use super::super::super::FileType;
 #[derive(Default, Debug)]
 pub struct FileInfo {
+    file_type: FileType,
     path: Option<PathBuf>,
 }
 
 impl FileInfo {
     pub fn from(file_name: &str) -> Self {
+        let path = PathBuf::from(file_name);
+        let file_type = if path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("rs")) {
+            FileType::Rust
+        } else {
+            FileType::Text
+        };
+
         Self {
-            path: Some(PathBuf::from(file_name)),
+            path: Some(path),
+            file_type,
         }
     }
 
@@ -21,6 +30,10 @@ impl FileInfo {
 
     pub const fn has_path(&self) -> bool {
         self.path.is_some()
+    }
+
+    pub const fn get_file_type(&self) -> FileType {
+        self.file_type
     }
 }
 

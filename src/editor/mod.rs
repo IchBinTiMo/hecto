@@ -6,13 +6,11 @@ use self::command::{
 };
 use crate::prelude::*;
 use annotatedstring::AnnotatedString;
-pub use annotationtype::AnnotationType;
 use annotation::Annotation;
+pub use annotationtype::AnnotationType;
 use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
 use documentstatus::DocumentStatus;
 use line::Line;
-// use position::{Col, Position};
-// use size::Size;
 use std::{
     env,
     io::Error,
@@ -20,17 +18,21 @@ use std::{
 };
 use terminal::Terminal;
 use uicomponents::{CommandBar, MessageBar, StatusBar, UIComponent, View};
+use filetype::FileType;
+// use position::{Col, Position};
+// use size::Size;
 
 mod annotatedstring;
 mod command;
 mod documentstatus;
 mod line;
-// mod position;
-// mod size;
+mod annotation;
+pub mod annotationtype;
 mod terminal;
 mod uicomponents;
-pub mod annotationtype;
-mod annotation;
+mod filetype;
+// mod position;
+// mod size;
 
 // const NAME: &str = env!("CARGO_PKG_NAME");
 // const VERSION: &str = env!("CARGO_PKG_VERSION");

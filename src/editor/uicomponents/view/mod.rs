@@ -35,12 +35,15 @@ pub struct View {
 
 impl View {
     pub fn get_status(&self) -> DocumentStatus {
+        let file_info = self.buffer.get_file_info();
+
         DocumentStatus {
-            total_lines: self.buffer.height(),
             current_grapheme_index: self.text_location.grapheme_index,
             current_line_index: self.text_location.line_index,
-            file_name: format!("{}", self.buffer.get_file_info()),
+            file_name: format!("{file_info}"),
+            file_type: file_info.get_file_type(),
             is_modified: self.buffer.is_dirty(),
+            total_lines: self.buffer.height(),
         }
     }
 
