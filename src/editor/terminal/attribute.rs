@@ -65,6 +65,14 @@ impl From<AnnotationType> for Attribute {
                     b: 0,
                 }),
                 background: None,
+            },
+            AnnotationType::LifeTimeSpecifier => Self {
+                foreground: Some(Color::Rgb {
+                    r: 102,
+                    g: 205,
+                    b: 170,
+                }),
+                background: None,
             }
         }
     }

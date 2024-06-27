@@ -226,6 +226,22 @@ fn annotate_char(string: &str) -> Option<Annotation> {
 
     None
 }
+
+fn annotate_lifetime_specifier(string: &str) -> Option<Annotation> {
+    let mut iter = string.split_word_bound_indices();
+
+    if let Some((_, "\'")) = iter.next() {
+        if let Some((idx, next_word)) = iter.next() {
+            return Some(Annotation {
+                annotation_type: AnnotationType::LifeTimeSpecifier,
+                start: 0,
+                end: idx.saturating_add(next_word.len()),
+            });
+        }
+    }
+
+    None
+}
 // #[derive(Default)]
 // pub struct Highlighter<'a> {
 //     matched_word: Option<&'a str>,
@@ -327,6 +343,7 @@ impl SyntaxHighlighter for RustSyntaxHighlighter {
             let remainder = &line[start_idx..];
 
             if let Some(mut annotation) = annotate_char(remainder)
+                .or_else(|| annotate_lifetime_specifier(remainder))
                 .or_else(|| annotate_number(remainder))
                 .or_else(|| annotate_keyword(remainder))
                 .or_else(|| annotate_type(remainder))
