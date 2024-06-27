@@ -46,7 +46,7 @@ impl Buffer {
         self.lines.get(line_idx).map(|line| {
             line.get_annotated_visible_substr(
                 range,
-                highlighter.get_annotation(line_idx),
+                Some(&highlighter.get_annotations(line_idx)),
                 // search_results,
             )
         })
