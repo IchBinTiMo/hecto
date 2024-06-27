@@ -1,4 +1,3 @@
-// use super::Size;
 use crate::prelude::*;
 use crossterm::event::Event;
 pub use edit::Edit;

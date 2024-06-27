@@ -89,7 +89,7 @@ impl From<AnnotationType> for Attribute {
                     b: 102,
                 }),
                 background: None,
-            }
+            },
         }
     }
 }

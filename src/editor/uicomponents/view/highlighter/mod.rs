@@ -3,11 +3,9 @@ use crate::prelude::*;
 use rustsyntaxhighlighter::RustSyntaxHighlighter;
 use searchresulthighlighter::SearchResultHighlighter;
 use syntaxhighlighter::SyntaxHighlighter;
-// use syntaxhighlighter::SyntaxHighlighter;
 
 mod rustsyntaxhighlighter;
 mod searchresulthighlighter;
-// mod syntaxhighlighter;
 mod syntaxhighlighter;
 
 fn create_syntax_highlighter(file_type: FileType) -> Option<Box<dyn SyntaxHighlighter>> {
@@ -24,8 +22,13 @@ pub struct Highlighter<'a> {
 }
 
 impl<'a> Highlighter<'a> {
-    pub fn new(file_type: FileType, matched_word: Option<&'a str>, selected_match: Option<Location>) -> Self {
-        let search_result_highlighter = matched_word.map(|matched_word| SearchResultHighlighter::new(matched_word, selected_match));
+    pub fn new(
+        file_type: FileType,
+        matched_word: Option<&'a str>,
+        selected_match: Option<Location>,
+    ) -> Self {
+        let search_result_highlighter = matched_word
+            .map(|matched_word| SearchResultHighlighter::new(matched_word, selected_match));
 
         Self {
             syntax_highlighter: create_syntax_highlighter(file_type),
@@ -51,7 +54,12 @@ impl<'a> Highlighter<'a> {
         result
     }
 
-    pub fn highlight(&mut self, line_idx: LineIdx, line: &Line, search_results: &Option<Vec<GraphemeIdx>>) {
+    pub fn highlight(
+        &mut self,
+        line_idx: LineIdx,
+        line: &Line,
+        search_results: &Option<Vec<GraphemeIdx>>,
+    ) {
         if let Some(syntax_highlighter) = &mut self.syntax_highlighter {
             syntax_highlighter.highlight(line_idx, line, search_results);
         }

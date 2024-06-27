@@ -20,8 +20,7 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
             .annotations
             .iter()
             .filter(|annotation| {
-                annotation.start <= self.current_idx
-                    && annotation.end > self.current_idx
+                annotation.start <= self.current_idx && annotation.end > self.current_idx
             })
             .last()
         {

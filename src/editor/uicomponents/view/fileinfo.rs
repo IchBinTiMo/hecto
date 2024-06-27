@@ -1,8 +1,8 @@
+use super::super::super::FileType;
 use std::{
     fmt::{self, Display},
     path::{Path, PathBuf},
 };
-use super::super::super::FileType;
 #[derive(Default, Debug)]
 pub struct FileInfo {
     file_type: FileType,
@@ -12,7 +12,10 @@ pub struct FileInfo {
 impl FileInfo {
     pub fn from(file_name: &str) -> Self {
         let path = PathBuf::from(file_name);
-        let file_type = if path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("rs")) {
+        let file_type = if path
+            .extension()
+            .map_or(false, |ext| ext.eq_ignore_ascii_case("rs"))
+        {
             FileType::Rust
         } else {
             FileType::Text

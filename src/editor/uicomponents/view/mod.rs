@@ -9,18 +9,12 @@ use buffer::Buffer;
 use fileinfo::FileInfo;
 use highlighter::Highlighter;
 use searchinfo::SearchInfo;
-use std::{cmp::min, io::Error,};
+use std::{cmp::min, io::Error};
 
 mod buffer;
 mod fileinfo;
 mod highlighter;
 mod searchinfo;
-
-// #[derive(Clone, Copy, Default, Debug)]
-// pub struct Location {
-//     pub grapheme_index: usize,
-//     pub line_index: usize,
-// }
 
 #[derive(Default)]
 pub struct View {
@@ -74,9 +68,6 @@ impl View {
         }
 
         self.exit_search();
-        // self.search_info = None;
-        // self.set_needs_redraw(true);
-        // self.scroll_text_location_into_view();
     }
 
     pub fn search(&mut self, query: &str) {
@@ -170,21 +161,10 @@ impl View {
 
     fn insert_char(&mut self, character: char) {
         let old_len = self.buffer.grapheme_count(self.text_location.line_index);
-        // let old_len = self
-        //     .buffer
-        //     .lines
-        //     .get(self.text_location.line_index)
-        //     .map_or(0, Line::grapheme_count);
 
         self.buffer.insert_char(character, self.text_location);
 
         let new_len = self.buffer.grapheme_count(self.text_location.line_index);
-
-        // let new_len = self
-        //     .buffer
-        //     .lines
-        //     .get(self.text_location.line_index)
-        //     .map_or(0, Line::grapheme_count);
 
         let grapheme_delta = new_len.saturating_sub(old_len);
 
@@ -331,7 +311,7 @@ impl View {
     fn move_to_end_of_line(&mut self) {
         self.text_location.grapheme_index =
             self.buffer.grapheme_count(self.text_location.line_index);
-        self.prev_text_location.grapheme_index = 
+        self.prev_text_location.grapheme_index =
             self.buffer.grapheme_count(self.text_location.line_index);
     }
 
@@ -386,7 +366,6 @@ impl UIComponent for View {
 
     fn draw(&mut self, origin_row: RowIdx) -> Result<(), Error> {
         let Size { width, height } = self.size;
-        // assert_eq!(self.scroll_offset.row, 0);
         let end_y = origin_row.saturating_add(height);
 
         #[allow(clippy::integer_division)]
@@ -434,42 +413,6 @@ impl UIComponent for View {
             let left = self.scroll_offset.col;
             let right = self.scroll_offset.col.saturating_add(width);
 
-            // self.buffer.highlight(idx, &mut highlighter)
-
-            // if let Some(line) = self.buffer.lines.get(line_idx) {
-            //     let left = self.scroll_offset.col;
-            //     let right = self.scroll_offset.col.saturating_add(width);
-
-            //     let query: Option<&str> = self
-            //         .search_info
-            //         .as_ref()
-            //         .and_then(|search_info| search_info.query.as_deref());
-
-            //     let selected_match = (self.text_location.line_index == line_idx && query.is_some())
-            //         .then_some(self.text_location.grapheme_index);
-            //     let search_results = if let Some(search_info) = &self.search_info {
-            //         if let Some(locations) = &search_info.result {
-            //             let res = locations
-            //                 .iter()
-            //                 .filter(|location| location.line_index == line_idx)
-            //                 .map(|location| location.grapheme_index)
-            //                 .collect::<Vec<_>>();
-            //             Some(res)
-            //         } else {
-            //             None
-            //         }
-            //     } else {
-            //         None
-            //     };
-            //     Terminal::print_annotated_row(
-            //         current_row,
-            //         &line.get_annotated_visible_substr(
-            //             left..right,
-            //             query,
-            //             selected_match,
-            //             &search_results,
-            //         ),
-            //     )?;
             if let Some(annotated_string) =
                 self.buffer
                     .get_highlighted_substring(line_idx, left..right, &highlighter)

@@ -4,8 +4,6 @@ use crossterm::event::{
     KeyEvent, KeyModifiers,
 };
 
-// use crate::editor::Size;
-
 #[derive(Clone, Copy)]
 pub enum System {
     Save,

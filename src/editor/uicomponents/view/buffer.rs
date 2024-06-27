@@ -40,19 +40,19 @@ impl Buffer {
         &self,
         line_idx: LineIdx,
         range: Range<GraphemeIdx>,
-        // search_results: &Option<Vec<GraphemeIdx>>,
         highlighter: &Highlighter,
     ) -> Option<AnnotatedString> {
         self.lines.get(line_idx).map(|line| {
-            line.get_annotated_visible_substr(
-                range,
-                Some(&highlighter.get_annotations(line_idx)),
-                // search_results,
-            )
+            line.get_annotated_visible_substr(range, Some(&highlighter.get_annotations(line_idx)))
         })
     }
 
-    pub fn highlight(&self, idx: LineIdx, search_results: &Option<Vec<GraphemeIdx>>, highlighter: &mut Highlighter) {
+    pub fn highlight(
+        &self,
+        idx: LineIdx,
+        search_results: &Option<Vec<GraphemeIdx>>,
+        highlighter: &mut Highlighter,
+    ) {
         if let Some(line) = self.lines.get(idx) {
             highlighter.highlight(idx, line, search_results);
         }
