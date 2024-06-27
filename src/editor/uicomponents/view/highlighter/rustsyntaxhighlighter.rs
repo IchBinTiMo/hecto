@@ -69,7 +69,8 @@ const KNOWN_VALUES: [&str; 6] = ["Some", "None", "true", "false", "Ok", "Err"];
 pub struct RustSyntaxHighlighter {
     // highlights: HashMap<LineIdx, Vec<Annotation>>,
     highlights: Vec<Vec<Annotation>>,
-    ml_comment_balance: usize
+    ml_comment_balance: usize,
+    in_ml_string: bool,
 }
 
 fn is_valid_number(word: &str) -> bool {
@@ -251,7 +252,7 @@ fn annotate_single_line_comment(string: &str) -> Option<Annotation> {
             annotation_type: AnnotationType::Comment,
             start: 0,
             end: string.len(),
-        })
+        });
     }
 
     None
@@ -284,7 +285,7 @@ impl RustSyntaxHighlighter {
                             annotation_type: AnnotationType::Comment,
                             start: 0,
                             end: idx.saturating_add(1),
-                        })
+                        });
                     }
 
                     chars.next();
@@ -298,83 +299,140 @@ impl RustSyntaxHighlighter {
             end: string.len(),
         })
     }
-//     // pub fn new(matched_word: Option<&'a str>, selected_match: Option<Location>) -> Self {
-//     //     Self {
-//     //         matched_word,
-//     //         selected_match,
-//     //         highlights: HashMap::new(),
-//     //     }
-//     // }
 
-//     // pub fn get_annotation(&self, idx: LineIdx) -> Option<&Vec<Annotation>> {
-//     //     self.highlights.get(&idx)
-//     // }
+    fn initial_annotation(&mut self, line: &Line) -> Option<Annotation> {
+        if self.in_ml_string {
+            self.annotate_string(line)
+        } else if self.ml_comment_balance > 0 {
+            self.annotate_ml_comment(line)
+        } else {
+            None
+        }
+    }
 
-//     fn highlight_digits(line: &Line, result: &mut Vec<Annotation>) {
-//         line.chars().enumerate().for_each(|(idx, ch)| {
-//             if ch.is_ascii_digit() {
-//                 result.push(Annotation {
-//                     annotation_type: AnnotationType::Number,
-//                     start: idx,
-//                     end: idx.saturating_add(1),
-//                 });
-//             }
-//         });
-//     }
+    fn annotate_string(&mut self, string: &str) -> Option<Annotation> {
+        let mut chars = string.char_indices();
 
-//     // fn highlight_matched_words(&self, _line: &Line, result: &mut Vec<Annotation>, search_results: &Option<Vec<GraphemeIdx>>) {
-//     //     if let Some(matched_word) = self.matched_word {
-//     //         if matched_word.is_empty() {
-//     //             return;
-//     //         }
-//     //     }
+        while let Some((idx, ch)) = chars.next() {
+            if ch == '\\' && self.in_ml_string {
+                chars.next();
+                continue;
+            }
 
-//     //     if let Some(search_results) = search_results {
-//     //         if let Some(match_word) = self.matched_word {
-//     //             for grapheme_idx in search_results {
-//     //                 let start = *grapheme_idx;
-//     //                 let end = start.saturating_add(match_word.len());
-//     //                 result.push(Annotation {
-//     //                     annotation_type: AnnotationType::Match,
-//     //                     start,
-//     //                     end,
-//     //                 })
-//     //             }
-//     //         }
-//     //     }
-//     // }
+            if ch == '"' {
+                if self.in_ml_string {
+                    self.in_ml_string = false;
 
-//     // fn highlight_selected_match(&self, result: &mut Vec<Annotation>) {
-//     //     if let Some(seleted_match) = self.selected_match {
-//     //         if let Some(match_word) = self.matched_word {
-//     //             if match_word.is_empty() {
-//     //                 return;
-//     //             }
+                    return Some(Annotation {
+                        annotation_type: AnnotationType::String,
+                        start: 0,
+                        end: idx.saturating_add(1),
+                    });
+                }
 
-//     //             let start = seleted_match.grapheme_index;
-//     //             let end = start.saturating_add(match_word.len());
-//     //             result.push(Annotation {
-//     //                 annotation_type: AnnotationType::SelectedMatch,
-//     //                 start,
-//     //                 end,
-//     //             })
-//     //         }
-//     //     }
-//     // }
+                self.in_ml_string = true;
+            }
 
-//     // pub fn highlight(&mut self, line_idx: LineIdx, line: &Line, search_results: &Option<Vec<GraphemeIdx>>) {
-//     //     let mut result = Vec::new();
-//     //     Self::highlight_digits(line, &mut result);
-//     //     self.highlight_matched_words(line, &mut result, search_results);
+            if !self.in_ml_string {
+                return None;
+            }
+        }
 
-//     //     if let Some(selected_match) = self.selected_match {
-//     //         if selected_match.line_index == line_idx {
-//     //             self.highlight_selected_match(&mut result);
-//     //         }
-//     //     }
+        self.in_ml_string.then_some(Annotation {
+            annotation_type: AnnotationType::String,
+            start: 0,
+            end: string.len(),
+        })
+    }
 
-//     //     self.highlights.insert(line_idx, result);
-//     // }
+    fn annotate_remainder(&mut self, remainder: &str) -> Option<Annotation> {
+        self.annotate_ml_comment(remainder)
+            .or_else(|| self.annotate_string(remainder))
+            .or_else(|| annotate_single_line_comment(remainder))
+            .or_else(|| annotate_char(remainder))
+            .or_else(|| annotate_lifetime_specifier(remainder))
+            .or_else(|| annotate_number(remainder))
+            .or_else(|| annotate_keyword(remainder))
+            .or_else(|| annotate_type(remainder))
+            .or_else(|| annotate_known_value(remainder))
+    }
+    //     // pub fn new(matched_word: Option<&'a str>, selected_match: Option<Location>) -> Self {
+    //     //     Self {
+    //     //         matched_word,
+    //     //         selected_match,
+    //     //         highlights: HashMap::new(),
+    //     //     }
+    //     // }
+
+    //     // pub fn get_annotation(&self, idx: LineIdx) -> Option<&Vec<Annotation>> {
+    //     //     self.highlights.get(&idx)
+    //     // }
+
+    //     fn highlight_digits(line: &Line, result: &mut Vec<Annotation>) {
+    //         line.chars().enumerate().for_each(|(idx, ch)| {
+    //             if ch.is_ascii_digit() {
+    //                 result.push(Annotation {
+    //                     annotation_type: AnnotationType::Number,
+    //                     start: idx,
+    //                     end: idx.saturating_add(1),
+    //                 });
+    //             }
+    //         });
+    //     }
+
+    //     // fn highlight_matched_words(&self, _line: &Line, result: &mut Vec<Annotation>, search_results: &Option<Vec<GraphemeIdx>>) {
+    //     //     if let Some(matched_word) = self.matched_word {
+    //     //         if matched_word.is_empty() {
+    //     //             return;
+    //     //         }
+    //     //     }
+
+    //     //     if let Some(search_results) = search_results {
+    //     //         if let Some(match_word) = self.matched_word {
+    //     //             for grapheme_idx in search_results {
+    //     //                 let start = *grapheme_idx;
+    //     //                 let end = start.saturating_add(match_word.len());
+    //     //                 result.push(Annotation {
+    //     //                     annotation_type: AnnotationType::Match,
+    //     //                     start,
+    //     //                     end,
+    //     //                 })
+    //     //             }
+    //     //         }
+    //     //     }
+    //     // }
+
+    //     // fn highlight_selected_match(&self, result: &mut Vec<Annotation>) {
+    //     //     if let Some(seleted_match) = self.selected_match {
+    //     //         if let Some(match_word) = self.matched_word {
+    //     //             if match_word.is_empty() {
+    //     //                 return;
+    //     //             }
+
+    //     //             let start = seleted_match.grapheme_index;
+    //     //             let end = start.saturating_add(match_word.len());
+    //     //             result.push(Annotation {
+    //     //                 annotation_type: AnnotationType::SelectedMatch,
+    //     //                 start,
+    //     //                 end,
+    //     //             })
+    //     //         }
+    //     //     }
+    //     // }
+
+    //     // pub fn highlight(&mut self, line_idx: LineIdx, line: &Line, search_results: &Option<Vec<GraphemeIdx>>) {
+    //     //     let mut result = Vec::new();
+    //     //     Self::highlight_digits(line, &mut result);
+    //     //     self.highlight_matched_words(line, &mut result, search_results);
+
+    //     //     if let Some(selected_match) = self.selected_match {
+    //     //         if selected_match.line_index == line_idx {
+    //     //             self.highlight_selected_match(&mut result);
+    //     //         }
+    //     //     }
+
+    //     //     self.highlights.insert(line_idx, result);
+    //     // }
 }
 
 impl SyntaxHighlighter for RustSyntaxHighlighter {
@@ -387,18 +445,22 @@ impl SyntaxHighlighter for RustSyntaxHighlighter {
         let mut result = Vec::new();
         let mut iterator = line.split_word_bound_indices().peekable();
 
+        if let Some(annotation) = self.initial_annotation(line) {
+            result.push(annotation);
+
+            while let Some(&(next_idx, _)) = iterator.peek() {
+                if next_idx >= annotation.end {
+                    break;
+                }
+
+                iterator.next();
+            }
+        }
+
         while let Some((start_idx, _)) = iterator.next() {
             let remainder = &line[start_idx..];
 
-            if let Some(mut annotation) = self.annotate_ml_comment(remainder)
-                .or_else(|| annotate_single_line_comment(remainder))
-                .or_else(|| annotate_char(remainder))
-                .or_else(|| annotate_lifetime_specifier(remainder))
-                .or_else(|| annotate_number(remainder))
-                .or_else(|| annotate_keyword(remainder))
-                .or_else(|| annotate_type(remainder))
-                .or_else(|| annotate_known_value(remainder))
-            {
+            if let Some(mut annotation) = self.annotate_remainder(remainder) {
                 annotation.shift(start_idx);
                 result.push(annotation);
 
@@ -410,6 +472,23 @@ impl SyntaxHighlighter for RustSyntaxHighlighter {
                 }
             }
         }
+
+        // while let Some((start_idx, _)) = iterator.next() {
+        //     let remainder = &line[start_idx..];
+
+        //     if let Some(mut annotation) = self.initial_annotation(line)
+        //     {
+        //         annotation.shift(start_idx);
+        //         result.push(annotation);
+
+        //         while let Some(&(next_idx, _)) = iterator.peek() {
+        //             if next_idx >= annotation.end {
+        //                 break;
+        //             }
+        //             iterator.next();
+        //         }
+        //     }
+        // }
 
         self.highlights.insert(line_idx, result);
     }
