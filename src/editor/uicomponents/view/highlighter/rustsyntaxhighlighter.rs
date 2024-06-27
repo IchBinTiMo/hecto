@@ -3,58 +3,60 @@ use crate::prelude::*;
 use std::collections::HashMap;
 use unicode_segmentation::UnicodeSegmentation;
 
-const KEYWORDS: [&str; 52] = ["break",
-"const",
-"continue",
-"crate",
-"else",
-"enum",
-"extern",
-"false",
-"fn",
-"for",
-"if",
-"impl",
-"in",
-"let",
-"loop",
-"match",
-"mod",
-"move",
-"mut",
-"pub",
-"ref",
-"return",
-"self",
-"Self",
-"static",
-"struct",
-"super",
-"trait",
-"true",
-"type",
-"unsafe",
-"use",
-"where",
-"while",
-"async",
-"await",
-"dyn",
-"abstract",
-"become",
-"box",
-"do",
-"final",
-"macro",
-"override",
-"priv",
-"typeof",
-"unsized",
-"virtual",
-"yield",
-"try",
-"macro_rules",
-"union",];
+const KEYWORDS: [&str; 50] = [
+    "break",
+    "const",
+    "continue",
+    "crate",
+    "else",
+    "enum",
+    "extern",
+    // "false",
+    "fn",
+    "for",
+    "if",
+    "impl",
+    "in",
+    "let",
+    "loop",
+    "match",
+    "mod",
+    "move",
+    "mut",
+    "pub",
+    "ref",
+    "return",
+    "self",
+    "Self",
+    "static",
+    "struct",
+    "super",
+    "trait",
+    // "true",
+    "type",
+    "unsafe",
+    "use",
+    "where",
+    "while",
+    "async",
+    "await",
+    "dyn",
+    "abstract",
+    "become",
+    "box",
+    "do",
+    "final",
+    "macro",
+    "override",
+    "priv",
+    "typeof",
+    "unsized",
+    "virtual",
+    "yield",
+    "try",
+    "macro_rules",
+    "union",
+];
 
 const TYPES: [&str; 22] = [
     "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32",
@@ -88,7 +90,6 @@ fn is_valid_number(word: &str) -> bool {
     let mut has_dot = false;
     let mut has_e = false;
     let mut prev_was_digit = true;
-
 
     for ch in chars {
         match ch {
@@ -128,7 +129,7 @@ fn is_valid_number(word: &str) -> bool {
                 has_e = true;
                 prev_was_digit = false;
             }
-            _ => return false
+            _ => return false,
         }
     }
 
@@ -166,6 +167,64 @@ fn is_type(word: &str) -> bool {
 
 fn is_known_value(word: &str) -> bool {
     KNOWN_VALUES.contains(&word)
+}
+
+fn annotate_next_word<F>(
+    string: &str,
+    annotation_type: AnnotationType,
+    validator: F,
+) -> Option<Annotation>
+where
+    F: Fn(&str) -> bool,
+{
+    if let Some(word) = string.split_word_bounds().next() {
+        if validator(word) {
+            return Some(Annotation {
+                annotation_type,
+                start: 0,
+                end: word.len(),
+            });
+        }
+    }
+
+    None
+}
+
+fn annotate_number(string: &str) -> Option<Annotation> {
+    annotate_next_word(string, AnnotationType::Number, is_valid_number)
+}
+
+fn annotate_type(string: &str) -> Option<Annotation> {
+    annotate_next_word(string, AnnotationType::Type, is_type)
+}
+
+fn annotate_keyword(string: &str) -> Option<Annotation> {
+    annotate_next_word(string, AnnotationType::Keyword, is_keyword)
+}
+
+fn annotate_known_value(string: &str) -> Option<Annotation> {
+    annotate_next_word(string, AnnotationType::KnownValue, is_known_value)
+}
+
+fn annotate_char(string: &str) -> Option<Annotation> {
+    let mut iter = string.split_word_bound_indices().peekable();
+
+    if let Some((_, "\'")) = iter.next() {
+        if let Some((_, "\\")) = iter.peek() {
+            iter.next();
+        }
+        iter.next();
+
+        if let Some((idx, "\'")) = iter.next() {
+            return Some(Annotation {
+                annotation_type: AnnotationType::Char,
+                start: 0,
+                end: idx.saturating_add(1),
+            });
+        }
+    }
+
+    None
 }
 // #[derive(Default)]
 // pub struct Highlighter<'a> {
@@ -262,30 +321,29 @@ impl SyntaxHighlighter for RustSyntaxHighlighter {
         _search_results: &Option<Vec<GraphemeIdx>>,
     ) {
         let mut result = Vec::new();
-        // Self::highlight_digits(line, &mut result);
-        for (start_idx, word) in line.split_word_bound_indices() {
-            let mut annotation_type = None;
-            if is_valid_number(word) {
-                annotation_type = Some(AnnotationType::Number);
-            } else if is_keyword(word) {
-                annotation_type = Some(AnnotationType::Keyword);
-            } else if is_type(word) {
-                annotation_type = Some(AnnotationType::Type);
-            } else if is_known_value(word) {
-                annotation_type = Some(AnnotationType::KnownValue);
-            }
+        let mut iterator = line.split_word_bound_indices().peekable();
 
-            if let Some(annotation_type) = annotation_type {
-                result.push(Annotation {
-                    annotation_type,
-                    start: start_idx,
-                    end: start_idx.saturating_add(word.len()),
-                });
-                
+        while let Some((start_idx, _)) = iterator.next() {
+            let remainder = &line[start_idx..];
+
+            if let Some(mut annotation) = annotate_char(remainder)
+                .or_else(|| annotate_number(remainder))
+                .or_else(|| annotate_keyword(remainder))
+                .or_else(|| annotate_type(remainder))
+                .or_else(|| annotate_known_value(remainder))
+            {
+                annotation.shift(start_idx);
+                result.push(annotation);
+
+                while let Some(&(next_idx, _)) = iterator.peek() {
+                    if next_idx >= annotation.end {
+                        break;
+                    }
+                    iterator.next();
+                }
             }
         }
 
-        
         self.highlights.insert(line_idx, result);
     }
 
